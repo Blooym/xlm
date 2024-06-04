@@ -17,6 +17,7 @@ use tokio::process::Command;
 const OPENSSL_FIX_FILENAME: &'static str = "openssl_fix.cnf";
 const XLCORE_VERSIONDATA_FILENAME: &'static str = "versiondata";
 
+/// Install/Update XIVLauncher and launch it.
 #[derive(Debug, Clone, Parser)]
 pub struct LaunchCommand {
     /// The name of the GitHub repository owner for XIVLauncher.

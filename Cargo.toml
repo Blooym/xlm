@@ -10,6 +10,7 @@ dirs = "5.0.1"
 flate2 = "1.0.30"
 octocrab = "0.38.0"
 reqwest = { version = "0.12.4", default_features = false, features = ["rustls-tls"] }
+self_update = { version = "0.40.0", default_features = false, features = ["rustls", "archive-tar", "compression-flate2"] }
 tar = "0.4.40"
 tokio = { version = "1.38.0", features = ["full"] }
 

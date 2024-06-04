@@ -10,6 +10,7 @@ use std::{
 const XLCM_COMPAT_FOLDER_NAME: &'static str = "XLCM";
 const XLCM_BINARY_NAME: &'static str = "xlcm";
 
+/// Setup the XLCM steam compatibility tool.
 #[derive(Debug, Clone, Parser)]
 pub struct SetupCommand {
     /// The path to the 'compatibilitytools.d' folder in your steam installation directory.
