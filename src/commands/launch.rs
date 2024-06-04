@@ -27,7 +27,7 @@ pub struct LaunchCommand {
     #[clap(default_value = "XIVLauncher.Core", long = "xlcore-repo-name")]
     xlcore_repo_name: String,
 
-    /// The name of the release asset that contains a self-contained XIVLauncher.
+    /// The name of the release tar.gz archive that contains a self-contained XIVLauncher.
     #[clap(
         default_value = "XIVLauncher.Core.tar.gz",
         long = "xlcore-release-asset"
