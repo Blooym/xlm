@@ -240,11 +240,12 @@ impl LaunchCommand {
 
                     ctx.set_pixels_per_point(1.5);
                     egui::CentralPanel::default().show(ctx, |ui| {
-                        ui.with_layout(Layout::top_down(egui::Align::Center), |ui| {
-                            ui.heading("Preparing XIVLauncher");
-                            ui.label("This could take a few minutes depending on your network.");
-                            ui.spinner();
-                        });
+                        ui.with_layout(
+                            Layout::centered_and_justified(egui::Direction::TopDown),
+                            |ui| {
+                                ui.heading("Preparing XIVLauncher, please wait patiently.");
+                            },
+                        );
                     });
                 },
             )
