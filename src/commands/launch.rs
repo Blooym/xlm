@@ -1,6 +1,7 @@
 use crate::includes::OPENSSL_FIX_CNF;
 use bytes::Buf;
 use clap::Parser;
+use eframe::egui::{self, Layout};
 use flate2::read::GzDecoder;
 use octocrab::models::repos::Release;
 use reqwest::Url;
@@ -10,12 +11,17 @@ use std::{
     fs::{self, File},
     io::{ErrorKind, Write},
     path::PathBuf,
+    sync::RwLock,
 };
 use tar::Archive;
 use tokio::process::Command;
+use winit::platform::wayland::EventLoopBuilderExtWayland;
 
 const OPENSSL_FIX_FILENAME: &'static str = "openssl_fix.cnf";
 const XLCORE_VERSIONDATA_FILENAME: &'static str = "versiondata";
+
+/// Whether all egui windows should close when they next redraw.
+static UI_SHOULD_CLOSE: RwLock<bool> = RwLock::new(false);
 
 /// Install/Update XIVLauncher and launch it.
 #[derive(Debug, Clone, Parser)]
@@ -61,7 +67,7 @@ impl LaunchCommand {
                 Err(err) => {
                     eprintln!(
                         "XLCM: Failed to obtain release information for {}/{}: {:?}",
-                        self.xlcore_repo_name,
+                        self.xlcore_repo_owner,
                         self.xlcore_repo_name,
                         err.source()
                     );
@@ -76,10 +82,11 @@ impl LaunchCommand {
                         if ver == release.tag_name {
                             println!("XLCM: Installed XIVLauncher is up to date!");
                         } else {
+                            Self::open_xlcm_wait_ui();
                             println!(
                                 "XLCM: Installed XIVLauncher is out of date, starting updater..."
                             );
-                            install_or_update_xlcore(
+                            Self::install_or_update_xlcore(
                                 release,
                                 &self.xlcore_release_asset,
                                 self.aria_download_url,
@@ -97,8 +104,9 @@ impl LaunchCommand {
                 }
                 Err(err) => {
                     if err.kind() == ErrorKind::NotFound {
+                        Self::open_xlcm_wait_ui();
                         println!("XLCM: Unable to obtain local version data for XIVLauncher, installing from latest tag...");
-                        install_or_update_xlcore(
+                        Self::install_or_update_xlcore(
                             release,
                             &self.xlcore_release_asset,
                             self.aria_download_url,
@@ -116,6 +124,8 @@ impl LaunchCommand {
                 }
             };
         }
+
+        Self::close_xlcm_wait_ui();
 
         println!("XLCM: Starting XIVLauncher");
         let cmd = Command::new(self.install_directory.join("XIVLauncher.Core"))
@@ -135,69 +145,115 @@ impl LaunchCommand {
             cmd.code()
         );
     }
-}
 
-async fn install_or_update_xlcore(
-    release: Release,
-    release_asset_name: &String,
-    aria_download_url: Url,
-    install_location: &PathBuf,
-) -> Result<(), ()> {
-    for asset in release.assets {
-        if asset.name != *release_asset_name {
-            continue;
+    /// Creates a new XLCore installation or overwrites an existing XLCore installion with a new one.
+    async fn install_or_update_xlcore(
+        release: Release,
+        release_asset_name: &String,
+        aria_download_url: Url,
+        install_location: &PathBuf,
+    ) -> Result<(), ()> {
+        for asset in release.assets {
+            if asset.name != *release_asset_name {
+                continue;
+            }
+
+            // Download and decompress XLCore.
+            {
+                println!(
+                    "XLCM: Downloading release from {}",
+                    asset.browser_download_url,
+                );
+                let response = reqwest::get(asset.browser_download_url).await.unwrap();
+                let bytes = response.bytes().await.unwrap();
+                let mut archive = Archive::new(GzDecoder::new(bytes.reader()));
+                let _ = fs::remove_dir_all(install_location);
+                fs::create_dir_all(install_location).unwrap();
+                println!("XLCM: Unpacking release tarball");
+                archive.unpack(install_location).unwrap();
+                println!("XLCM: Wrote xivlauncher files");
+            }
+
+            {
+                // Download and write aria2c
+                let response = reqwest::get(aria_download_url).await.unwrap();
+                let bytes = response.bytes().await.unwrap();
+                let mut archive = Archive::new(GzDecoder::new(bytes.reader()));
+                println!("XLCM: Unpacking aria2c tarball");
+                archive.unpack(install_location).unwrap();
+                println!("XLCM: Wrote aria2c binary");
+            }
+
+            {
+                // Write the OpenSSL fix into the release.
+                let mut file = File::options()
+                    .write(true)
+                    .create(true)
+                    .truncate(true)
+                    .append(false)
+                    .open(install_location.join(OPENSSL_FIX_FILENAME))
+                    .unwrap();
+                file.write_all(OPENSSL_FIX_CNF.as_bytes()).unwrap();
+                println!("XLCM: Wrote openssl_fix.cnf");
+
+                // Write version info into the release.
+                let mut file = File::options()
+                    .write(true)
+                    .create(true)
+                    .truncate(true)
+                    .append(false)
+                    .open(install_location.join(XLCORE_VERSIONDATA_FILENAME))
+                    .unwrap();
+                file.write_all(release.tag_name.as_bytes()).unwrap();
+                println!("XLCM: Wrote versiondata with {}", release.tag_name);
+            }
+
+            break;
         }
 
-        // Download and decompress XLCore.
-        {
-            println!(
-                "XLCM: Downloading release from {}",
-                asset.browser_download_url,
-            );
-            let response = reqwest::get(asset.browser_download_url).await.unwrap();
-            let bytes = response.bytes().await.unwrap();
-            let mut archive = Archive::new(GzDecoder::new(bytes.reader()));
-            let _ = fs::remove_dir_all(install_location);
-            fs::create_dir_all(install_location).unwrap();
-            println!("XLCM: Unpacking release tarball");
-            archive.unpack(install_location).unwrap();
-            println!("XLCM: Wrote xivlauncher files");
-        }
-
-        {
-            // Download and write aria2c
-            let response = reqwest::get(aria_download_url).await.unwrap();
-            let bytes = response.bytes().await.unwrap();
-            let mut archive = Archive::new(GzDecoder::new(bytes.reader()));
-            println!("XLCM: Unpacking aria2c tarball");
-            archive.unpack(install_location).unwrap();
-            println!("XLCM: Wrote aria2c binary");
-        }
-
-        {
-            // Write the OpenSSL fix into the release.
-            let mut file = File::options()
-                .write(true)
-                .create(true)
-                .append(false)
-                .open(install_location.join(OPENSSL_FIX_FILENAME))
-                .unwrap();
-            file.write_all(OPENSSL_FIX_CNF.as_bytes()).unwrap();
-            println!("XLCM: Wrote openssl_fix.cnf");
-
-            // Write version info into the release.
-            let mut file = File::options()
-                .write(true)
-                .create(true)
-                .append(false)
-                .open(install_location.join(XLCORE_VERSIONDATA_FILENAME))
-                .unwrap();
-            file.write_all(release.tag_name.as_bytes()).unwrap();
-            println!("XLCM: Wrote versiondata with {}", release.tag_name);
-        }
-
-        break;
+        Ok(())
     }
 
-    Ok(())
+    /// Starts a new Tokio task and displays an egui window displaying a "XIVLauncher is starting" message.
+    /// The egui window blocks inside of the task meaning it cannot be killed by aborting the thread.
+    /// To close the window you can call [`Self::close_xlcm_wait_ui`] which will close all existing windows.
+    fn open_xlcm_wait_ui() {
+        *UI_SHOULD_CLOSE.write().unwrap() = false;
+        tokio::task::spawn(async move {
+            eframe::run_simple_native(
+                "XLCM",
+                eframe::NativeOptions {
+                    event_loop_builder: Some(Box::new(|event_loop_builder| {
+                        event_loop_builder.with_any_thread(true);
+                    })),
+                    viewport: egui::ViewportBuilder::default()
+                        .with_inner_size([800.0, 500.0])
+                        .with_resizable(false)
+                        .with_decorations(false),
+                    default_theme: eframe::Theme::Dark,
+                    ..Default::default()
+                },
+                move |ctx, _frame| {
+                    if *UI_SHOULD_CLOSE.read().unwrap() {
+                        std::process::exit(0);
+                    }
+
+                    ctx.set_pixels_per_point(1.5);
+                    egui::CentralPanel::default().show(ctx, |ui| {
+                        ui.with_layout(Layout::top_down(egui::Align::Center), |ui| {
+                            ui.heading("Preparing XIVLauncher");
+                            ui.label("This could take a few minutes depending on your network.");
+                            ui.spinner();
+                        });
+                    });
+                },
+            )
+            .unwrap();
+        });
+    }
+
+    // Closes any running egui windows regardless of the thread they're running on.
+    fn close_xlcm_wait_ui() {
+        *UI_SHOULD_CLOSE.write().unwrap() = true;
+    }
 }
