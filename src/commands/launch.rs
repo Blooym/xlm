@@ -130,6 +130,7 @@ impl LaunchCommand {
         println!("XLCM: Starting XIVLauncher");
         let cmd = Command::new(self.install_directory.join("XIVLauncher.Core"))
             .env("XL_PRELOAD", env::var("LD_PRELOAD").unwrap_or_default()) // Write XL_PRELOAD so it can maybe be passed to the game later.
+            .env("XL_SCT", "1") // Needed to trigger compatibility tool mode in XIVLauncher. Otherwise XL_PRELOAD will be ignored.
             .env(
                 "OPENSSL_CONF",
                 &self.install_directory.join("openssl_fix.cnf"),
