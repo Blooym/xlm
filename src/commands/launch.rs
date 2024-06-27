@@ -22,7 +22,7 @@ const XLCORE_VERSIONDATA_FILENAME: &'static str = "versiondata";
 /// Whether all egui windows should close when they next redraw.
 static UI_SHOULD_CLOSE: RwLock<bool> = RwLock::new(false);
 
-/// Install/Update XIVLauncher and launch it.
+/// Install or update XIVLauncher and then open it.
 #[derive(Debug, Clone, Parser)]
 pub struct LaunchCommand {
     /// The name of the GitHub repository owner for XIVLauncher.
@@ -50,7 +50,12 @@ pub struct LaunchCommand {
     #[clap(default_value = dirs::data_local_dir().unwrap().join("xlcore").into_os_string(), long = "install-directory")]
     install_directory: PathBuf,
 
-    /// Do not check to see if XIVLauncher is out of date on startup. This will not prevent XIVLauncher from installing if it's not present at all.
+    /// Use a fallback secrets provider with XIVLauncher instead of the system provided.
+    /// Used when no system secrets provider is available and credentials should still be saved.
+    #[clap(default_value_t = false, long = "use-fallback-secret-provider")]
+    use_fallback_secret_provider: bool,
+
+    /// Skip checking for XIVLauncher updates. This will not prevent XIVLauncher from installing if it isn't installed.
     #[clap(default_value_t = false, long = "skip-update")]
     skip_update: bool,
 }
@@ -65,7 +70,7 @@ impl LaunchCommand {
                 Ok(release) => release,
                 Err(err) => {
                     bail!(
-                        "XLCM: Failed to obtain release information for {}/{}: {:?}",
+                        "XLM: Failed to obtain release information for {}/{}: {:?}",
                         self.xlcore_repo_owner,
                         self.xlcore_repo_name,
                         err.source()
@@ -78,11 +83,11 @@ impl LaunchCommand {
                 Ok(ver) => {
                     if !self.skip_update {
                         if ver == release.tag_name {
-                            println!("XLCM: Installed XIVLauncher is up to date!");
+                            println!("XLM: Installed XIVLauncher is up to date!");
                         } else {
-                            Self::open_xlcm_wait_ui();
+                            Self::open_xlm_wait_ui();
                             println!(
-                                "XLCM: Installed XIVLauncher is out of date, starting updater..."
+                                "XLM: Installed XIVLauncher is out of date, starting updater..."
                             );
                             Self::install_or_update_xlcore(
                                 release,
@@ -91,18 +96,16 @@ impl LaunchCommand {
                                 &self.install_directory,
                             )
                             .await?;
-                            println!(
-                                "XLCM: Successfully updated XIVLauncher to the latest version."
-                            )
+                            println!("XLM: Successfully updated XIVLauncher to the latest version.")
                         }
                     } else {
-                        println!("XLCM: Skip update enabled, not attempting to update XIVLauncher.")
+                        println!("XLM: Skip update enabled, not attempting to update XIVLauncher.")
                     }
                 }
                 Err(err) => {
                     if err.kind() == ErrorKind::NotFound {
-                        Self::open_xlcm_wait_ui();
-                        println!("XLCM: Unable to obtain local version data for XIVLauncher, installing from latest tag...");
+                        Self::open_xlm_wait_ui();
+                        println!("XLM: Unable to obtain local version data for XIVLauncher, installing from latest tag...");
                         Self::install_or_update_xlcore(
                             release,
                             &self.xlcore_release_asset,
@@ -121,18 +124,24 @@ impl LaunchCommand {
             };
         }
 
-        Self::close_xlcm_wait_ui();
+        Self::close_xlm_wait_ui();
 
-        println!("XLCM: Starting XIVLauncher");
-        let cmd = Command::new(self.install_directory.join("XIVLauncher.Core"))
+        println!("XLM: Starting XIVLauncher");
+
+        let mut cmd = Command::new(self.install_directory.join("XIVLauncher.Core"));
+        if self.use_fallback_secret_provider {
+            cmd.env("XL_SECRET_PROVIDER", "FILE");
+        }
+        let cmd = cmd
             .env("XL_PRELOAD", env::var("LD_PRELOAD").unwrap_or_default()) // Write XL_PRELOAD so it can maybe be passed to the game later.
             .env("XL_SCT", "1") // Needed to trigger compatibility tool mode in XIVLauncher. Otherwise XL_PRELOAD will be ignored.
             .env_remove("LD_PRELOAD") // Completely remove LD_PRELOAD otherwise steam overlay will break the launcher text.
             .spawn()?
             .wait()
             .await?;
+
         println!(
-            "XLCM: XIVLauncher process exited with exit code {:?}",
+            "XLM: XIVLauncher process exited with exit code {:?}",
             cmd.code()
         );
 
@@ -154,7 +163,7 @@ impl LaunchCommand {
             // Download and decompress XLCore.
             {
                 println!(
-                    "XLCM: Downloading release from {}",
+                    "XLM: Downloading release from {}",
                     asset.browser_download_url,
                 );
                 let response = reqwest::get(asset.browser_download_url).await?;
@@ -162,9 +171,9 @@ impl LaunchCommand {
                 let mut archive = Archive::new(GzDecoder::new(bytes.reader()));
                 let _ = fs::remove_dir_all(install_location);
                 fs::create_dir_all(install_location)?;
-                println!("XLCM: Unpacking release tarball");
+                println!("XLM: Unpacking release tarball");
                 archive.unpack(install_location)?;
-                println!("XLCM: Wrote xivlauncher files");
+                println!("XLM: Wrote xivlauncher files");
             }
 
             {
@@ -172,9 +181,9 @@ impl LaunchCommand {
                 let response = reqwest::get(aria_download_url).await?;
                 let bytes = response.bytes().await?;
                 let mut archive = Archive::new(GzDecoder::new(bytes.reader()));
-                println!("XLCM: Unpacking aria2c tarball");
+                println!("XLM: Unpacking aria2c tarball");
                 archive.unpack(install_location)?;
-                println!("XLCM: Wrote aria2c binary");
+                println!("XLM: Wrote aria2c binary");
             }
 
             {
@@ -186,7 +195,7 @@ impl LaunchCommand {
                     .append(false)
                     .open(install_location.join(XLCORE_VERSIONDATA_FILENAME))?;
                 file.write_all(release.tag_name.as_bytes())?;
-                println!("XLCM: Wrote versiondata with {}", release.tag_name);
+                println!("XLM: Wrote versiondata with {}", release.tag_name);
             }
 
             break;
@@ -197,12 +206,12 @@ impl LaunchCommand {
 
     /// Starts a new Tokio task and displays an egui window displaying a "XIVLauncher is starting" message.
     /// The egui window blocks inside of the task meaning it cannot be killed by aborting the thread.
-    /// To close the window you can call [`Self::close_xlcm_wait_ui`] which will close all existing windows.
-    fn open_xlcm_wait_ui() {
+    /// To close the window you can call [`Self::close_xlm_wait_ui`] which will close all existing windows.
+    fn open_xlm_wait_ui() {
         *UI_SHOULD_CLOSE.write().unwrap() = false;
         tokio::task::spawn(async move {
             eframe::run_simple_native(
-                "XLCM",
+                "XLM",
                 eframe::NativeOptions {
                     event_loop_builder: Some(Box::new(|event_loop_builder| {
                         event_loop_builder.with_any_thread(true);
@@ -235,7 +244,7 @@ impl LaunchCommand {
     }
 
     // Closes any running egui windows regardless of the thread they're running on.
-    fn close_xlcm_wait_ui() {
+    fn close_xlm_wait_ui() {
         *UI_SHOULD_CLOSE.write().unwrap() = true;
     }
 }

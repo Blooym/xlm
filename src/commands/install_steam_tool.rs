@@ -8,26 +8,28 @@ use std::{
     path::PathBuf,
 };
 
-const XLCM_COMPAT_FOLDER_NAME: &'static str = "XLCM";
-const XLCM_BINARY_NAME: &'static str = "xlcm";
+const XLM_COMPAT_FOLDER_NAME: &'static str = "XLM";
+const XLM_BINARY_NAME: &'static str = "xlm";
 
-/// Setup the XLCM steam compatibility tool.
+/// Install the XLM steam compatibility tool for easier launching via Steam.
 #[derive(Debug, Clone, Parser)]
-pub struct SetupCommand {
+pub struct InstallSteamToolCommand {
     /// The path to the 'compatibilitytools.d' folder in your steam installation directory.
+    /// Please read the manual if you don't know where this is.
     #[clap(long = "steam-compat-path")]
     steam_compat_path: PathBuf,
 
     /// Extra arguments to pass to the launch command when launching from the compatibility tool.
+    /// This can usually be left blank.
     #[clap(long = "extra-launch-args")]
     extra_launch_args: Option<String>,
 }
 
-impl SetupCommand {
+impl InstallSteamToolCommand {
     pub async fn run(self) -> Result<()> {
-        let compat_dir = self.steam_compat_path.join(XLCM_COMPAT_FOLDER_NAME);
+        let compat_dir = self.steam_compat_path.join(XLM_COMPAT_FOLDER_NAME);
         println!(
-            "Setting up the XLCM compatibility tool inside of {:?}",
+            "Setting up the XLM compatibility tool inside of {:?}",
             compat_dir
         );
 
@@ -35,7 +37,7 @@ impl SetupCommand {
         Self::write_compatibilitytool_vdf(&compat_dir)?;
         Self::write_toolmanifest_vdf(&compat_dir)?;
         Self::write_script(&compat_dir, self.extra_launch_args)?;
-        fs::copy(std::env::current_exe()?, compat_dir.join(XLCM_BINARY_NAME))?;
+        fs::copy(std::env::current_exe()?, compat_dir.join(XLM_BINARY_NAME))?;
 
         println!(
         "Successfully set up compatibility tool- please restart steam for it to correctly appear."
@@ -73,19 +75,25 @@ impl SetupCommand {
             .create(true)
             .truncate(true)
             .append(false)
-            .open(dir.join("xlcm.sh"))?;
+            .open(dir.join("xlm.sh"))?;
         let mut permissions = file.metadata()?.permissions();
         permissions.set_mode(0o755);
         file.set_permissions(permissions)?;
-        file.write_all(format!(r#"#!/bin/env bash
+        file.write_all(
+            format!(
+                r#"#!/bin/env bash
 
 # Prevents launching twice.
 if [ $1 == "run" ]; then sleep 1; exit; fi
 
 tooldir="$(realpath "$(dirname "$0")")"
 
-XL_SECRET_PROVIDER=FILE PATH=$PATH:$tooldir/xlcore $tooldir/xlcm launch --install-directory $tooldir/xlcore {}
-"#, extra_launch_args.unwrap_or_default()).as_bytes())?;
+PATH=$PATH:$tooldir/xlcore $tooldir/xlm launch --use-fallback-secret-provider --install-directory $tooldir/xlcore {}
+"#,
+                extra_launch_args.unwrap_or_default()
+            )
+            .as_bytes(),
+        )?;
 
         Ok(())
     }
