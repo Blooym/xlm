@@ -1,6 +1,7 @@
 mod commands;
 mod includes;
 
+use anyhow::Result;
 use clap::Parser;
 use commands::{launch::LaunchCommand, setup::SetupCommand};
 
@@ -37,7 +38,7 @@ struct Arguments {
 }
 
 #[tokio::main]
-async fn main() {
+async fn main() -> Result<()> {
     let args = Arguments::parse();
 
     // Ensure the binary is up to date from GitHub releases.
@@ -59,8 +60,7 @@ async fn main() {
                 eprintln!("Failed to auto-update: {:?}", result);
             };
         })
-        .await
-        .unwrap();
+        .await?;
     }
 
     // Run the command.

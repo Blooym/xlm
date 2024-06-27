@@ -1,4 +1,4 @@
-use crate::includes::OPENSSL_FIX_CNF;
+use anyhow::bail;
 use bytes::Buf;
 use clap::Parser;
 use eframe::egui::{self, Layout};
@@ -17,7 +17,6 @@ use tar::Archive;
 use tokio::process::Command;
 use winit::platform::wayland::EventLoopBuilderExtWayland;
 
-const OPENSSL_FIX_FILENAME: &'static str = "openssl_fix.cnf";
 const XLCORE_VERSIONDATA_FILENAME: &'static str = "versiondata";
 
 /// Whether all egui windows should close when they next redraw.
@@ -57,7 +56,7 @@ pub struct LaunchCommand {
 }
 
 impl LaunchCommand {
-    pub async fn run(self) {
+    pub async fn run(self) -> anyhow::Result<()> {
         {
             // Query the GitHub API for release information.
             let octocrab = octocrab::instance();
@@ -65,13 +64,12 @@ impl LaunchCommand {
             let release = match repo.releases().get_latest().await {
                 Ok(release) => release,
                 Err(err) => {
-                    eprintln!(
+                    bail!(
                         "XLCM: Failed to obtain release information for {}/{}: {:?}",
                         self.xlcore_repo_owner,
                         self.xlcore_repo_name,
                         err.source()
                     );
-                    return;
                 }
             };
 
@@ -92,8 +90,7 @@ impl LaunchCommand {
                                 self.aria_download_url,
                                 &self.install_directory,
                             )
-                            .await
-                            .unwrap();
+                            .await?;
                             println!(
                                 "XLCM: Successfully updated XIVLauncher to the latest version."
                             )
@@ -112,8 +109,7 @@ impl LaunchCommand {
                             self.aria_download_url,
                             &self.install_directory,
                         )
-                        .await
-                        .unwrap();
+                        .await?;
                         println!("Successfully installed XIVLauncher.")
                     } else {
                         eprint!(
@@ -130,21 +126,16 @@ impl LaunchCommand {
         println!("XLCM: Starting XIVLauncher");
         let cmd = Command::new(self.install_directory.join("XIVLauncher.Core"))
             .env("XL_PRELOAD", env::var("LD_PRELOAD").unwrap_or_default()) // Write XL_PRELOAD so it can maybe be passed to the game later.
-            .env("XL_SCT", "1") // Needed to trigger compatibility tool mode in XIVLauncher. Otherwise XL_PRELOAD will be ignored.
-            .env(
-                "OPENSSL_CONF",
-                &self.install_directory.join("openssl_fix.cnf"),
-            ) // Apply the OpenSSL fix for downloads.
             .env_remove("LD_PRELOAD") // Completely remove LD_PRELOAD otherwise steam overlay will break the launcher text.
-            .spawn()
-            .unwrap()
+            .spawn()?
             .wait()
-            .await
-            .unwrap();
+            .await?;
         println!(
             "XLCM: XIVLauncher process exited with exit code {:?}",
             cmd.code()
         );
+
+        Ok(())
     }
 
     /// Creates a new XLCore installation or overwrites an existing XLCore installion with a new one.
@@ -153,7 +144,7 @@ impl LaunchCommand {
         release_asset_name: &String,
         aria_download_url: Url,
         install_location: &PathBuf,
-    ) -> Result<(), ()> {
+    ) -> anyhow::Result<()> {
         for asset in release.assets {
             if asset.name != *release_asset_name {
                 continue;
@@ -165,47 +156,35 @@ impl LaunchCommand {
                     "XLCM: Downloading release from {}",
                     asset.browser_download_url,
                 );
-                let response = reqwest::get(asset.browser_download_url).await.unwrap();
-                let bytes = response.bytes().await.unwrap();
+                let response = reqwest::get(asset.browser_download_url).await?;
+                let bytes = response.bytes().await?;
                 let mut archive = Archive::new(GzDecoder::new(bytes.reader()));
                 let _ = fs::remove_dir_all(install_location);
-                fs::create_dir_all(install_location).unwrap();
+                fs::create_dir_all(install_location)?;
                 println!("XLCM: Unpacking release tarball");
-                archive.unpack(install_location).unwrap();
+                archive.unpack(install_location)?;
                 println!("XLCM: Wrote xivlauncher files");
             }
 
             {
                 // Download and write aria2c
-                let response = reqwest::get(aria_download_url).await.unwrap();
-                let bytes = response.bytes().await.unwrap();
+                let response = reqwest::get(aria_download_url).await?;
+                let bytes = response.bytes().await?;
                 let mut archive = Archive::new(GzDecoder::new(bytes.reader()));
                 println!("XLCM: Unpacking aria2c tarball");
-                archive.unpack(install_location).unwrap();
+                archive.unpack(install_location)?;
                 println!("XLCM: Wrote aria2c binary");
             }
 
             {
-                // Write the OpenSSL fix into the release.
-                let mut file = File::options()
-                    .write(true)
-                    .create(true)
-                    .truncate(true)
-                    .append(false)
-                    .open(install_location.join(OPENSSL_FIX_FILENAME))
-                    .unwrap();
-                file.write_all(OPENSSL_FIX_CNF.as_bytes()).unwrap();
-                println!("XLCM: Wrote openssl_fix.cnf");
-
                 // Write version info into the release.
                 let mut file = File::options()
                     .write(true)
                     .create(true)
                     .truncate(true)
                     .append(false)
-                    .open(install_location.join(XLCORE_VERSIONDATA_FILENAME))
-                    .unwrap();
-                file.write_all(release.tag_name.as_bytes()).unwrap();
+                    .open(install_location.join(XLCORE_VERSIONDATA_FILENAME))?;
+                file.write_all(release.tag_name.as_bytes())?;
                 println!("XLCM: Wrote versiondata with {}", release.tag_name);
             }
 

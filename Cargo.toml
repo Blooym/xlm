@@ -30,6 +30,7 @@ self_update = { version = "0.40.0", default_features = false, features = [
 ] }
 tar = "0.4.40"
 tokio = { version = "1.38.0", features = ["full"] }
+anyhow = "1.0.86"
 
 [profile.release]
 strip = true
