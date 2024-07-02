@@ -17,16 +17,21 @@ Please note that at this time the binary does not auto-update from GitHub releas
 
 ## Setting up as a steam compatibility tool
 
-Once you have the XLM binary installed, you'll first want to make sure it's set as executable. Open up a terminal and navigate to the directory where you installed the binary and run `chmod +x ./xlm`.
+Once you have the XLM binary installed make sure it's set as executable. Open up a terminal and navigate to the directory where you installed the binary and run `chmod +x ./xlm`.
 
-After you've done this, you'll want to run the XLM install steam tool command and indicate where you want the compatibility tool files installed - this will depend on where you have Steam installed. 
+Afterwards, run one of the following commands to install XLM as a Steam compatibility tool. What command you need to run depends on how you have Steam installed.
 
-For **Steamdeck** or Steam installed from your system package manager you'll want to run the following:
+**Steamdeck**:
+```
+./xlm install-steam-tool --extra-launch-args="--use-fallback-secret-provider" --steam-compat-path ~/.steam/root/compatibilitytools.d/
+```
+
+**Steam (Native)**
 ```
 ./xlm install-steam-tool --steam-compat-path ~/.steam/root/compatibilitytools.d/
 ```
 
-For the Steam Flatpak you'll want to run the following: 
+**Steam (Flatpak)**
 ```
 ./xlm install-steam-tool --extra-launch-args="--use-fallback-secret-provider" --steam-compat-path ~/.var/app/com.valvesoftware.Steam/.steam/root/compatibilitytools.d/
 ```
@@ -47,4 +52,4 @@ When installing the compatibility tool you have the option to pass extra launch 
 
 This means that XIVLauncher was unable to find a secure way to store your passwords. This is usually because you don't have a secrets manager like GNOME Keyring or KDE Wallet installed on your system. It's recommended you install a recognised and well known secrets manager to solve this problem.
 
-If you still run into this issue even with a secrets manager installed on your system you'll want to use the fallback file storage provider offered by XIVLauncher; You can tell XLM to ask XIVLauncher to enable this by running the `install-steam-tool` command again and including the following flag: `--extra-launch-args="--use-fallback-secret-provider"`.
+If you still run into this issue even with a secrets manager installed on your system, use the fallback file storage provider offered by XIVLauncher; You can tell XLM to ask XIVLauncher to enable this by running the `install-steam-tool` command again and including the following flag: `--extra-launch-args="--use-fallback-secret-provider"`.
