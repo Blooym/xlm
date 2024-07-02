@@ -21,14 +21,14 @@ Once you have the XLM binary installed, you'll first want to make sure it's set 
 
 After you've done this, you'll want to run the XLM install steam tool command and indicate where you want the compatibility tool files installed - this will depend on where you have Steam installed. 
 
+For **Steamdeck** or Steam installed from your system package manager you'll want to run the following:
+```
+./xlm install-steam-tool --steam-compat-path ~/.steam/root/compatibilitytools.d/
+```
+
 For the Steam Flatpak you'll want to run the following: 
 ```
 ./xlm install-steam-tool --extra-launch-args="--use-fallback-secret-provider" --steam-compat-path ~/.var/app/com.valvesoftware.Steam/.steam/root/compatibilitytools.d/
-```
-
-For Steam installed from your system package manager you'll want to specify the path as
-```
-./xlm install-steam-tool --steam-compat-path ~/.steam/root/compatibilitytools.d/
 ```
 
 ### Passing extra arguments or environment variables to the XIVLauncher (Advanced & Optional)
