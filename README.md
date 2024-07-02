@@ -31,6 +31,14 @@ For the Steam Flatpak you'll want to run the following:
 ./xlm install-steam-tool --extra-launch-args="--use-fallback-secret-provider" --steam-compat-path ~/.var/app/com.valvesoftware.Steam/.steam/root/compatibilitytools.d/
 ```
 
+After you've ran this do the following:
+- Switch back to gaming mode (Steamdeck) or restart Steam 
+- Navigate to your library and select "FINAL FANTASY XIV Online" 
+- Open the game properties menu and switch to the "compatibility" tab
+- Enable the "Force the use of a specific Steam Play compatibility tool" checkbox
+- From the dropdown that appears select "XLCore [XLM]" (if this does not show, please make sure you restarted Steam first)
+- You can now launch the game. XIVLauncher will be automatically installed to the compatibilitytools.d directory and start as usual. When you close the game, Steam will recognise this.
+
 ### Passing extra arguments or environment variables to the XIVLauncher (Advanced & Optional)
 
 When installing the compatibility tool you have the option to pass extra launch arguments via the `--extra-launch-args` flag and to pass extra environment variables via the `--extra-env-vars` flag. This will allow you to, for example, override the version of XIVLauncher you're using. More information on launch flags can be found by running `xlm launch --help`.
