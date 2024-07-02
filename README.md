@@ -1,3 +1,42 @@
-# xlm
+# XLM - XIVLauncher Manager
 
-The code in this repository is for prototyping and local testing only. Please do not attempt to run it yourself yet, trust me - it's not finished.
+> [!IMPORTANT]  
+> The code in this repository is considered experimental and is not finished. While I personally use this tool daily without issue, you may run into problems that I have not.
+
+An alternative method for launching XIVLauncher.Core on Linux, primarily built to avoid the pitfalls of using Flatpak XIVLauncher & Steam together. It allows for launching standalone or via a steam compatibility tool while providing nice features like launcher auto-updates.
+
+## Setup
+
+The download and setup process has yet to be streamlined and as such may not be a smooth experience. The steps listed in this guide should get you where you need to go though.
+
+### Getting the binary
+
+To use this tool it's recommended to download the latest release from the [GitHub Releases](https://github.com/Blooym/xlm/releases/latest) page. You can also compile it yourself using Rust if you so wish, however no guide is offered for that.
+
+Please note that at this time the binary does not auto-update from GitHub releases and as such will need to be updated by hand if you wish to take advantage of new features or receive critical bugfixes. There are future plans to implement an auto-updater so this is not necessary.
+
+## Setting up as a steam compatibility tool
+
+Once you have the XLM binary installed, you'll first want to make sure it's set as executable. Open up a terminal and navigate to the directory where you installed the binary and run `chmod +x ./xlm`.
+
+After you've done this, you'll want to run the XLM install steam tool command and indicate where you want the compatibility tool files installed - this will depend on where you have Steam installed. 
+
+For the Steam Flatpak you'll want to run the following: 
+```
+./xlm install-steam-tool --extra-launch-args="--use-fallback-secret-provider" --steam-compat-path ~/.var/app/com.valvesoftware.Steam/.steam/root/compatibilitytools.d/
+```
+
+For Steam installed from your system package manager you'll want to specify the path as
+```
+./xlm install-steam-tool --steam-compat-path ~/.steam/root/compatibilitytools.d/
+```
+
+### Passing extra arguments or environment variables to the XIVLauncher (Advanced & Optional)
+
+When installing the compatibility tool you have the option to pass extra launch arguments via the `--extra-launch-args` flag and to pass extra environment variables via the `--extra-env-vars` flag. This will allow you to, for example, override the version of XIVLauncher you're using. More information on launch flags can be found by running `xlm launch --help`.
+
+### "No secrets provider installed or configured"
+
+This means that XIVLauncher was unable to find a secure way to store your passwords. This is usually because you don't have a secrets manager like GNOME Keyring or KDE Wallet installed on your system. It's recommended you install a recognised and well known secrets manager to solve this problem.
+
+If you still run into this issue even with a secrets manager installed on your system you'll want to use the fallback file storage provider offered by XIVLauncher; You can tell XLM to ask XIVLauncher to enable this by running the `install-steam-tool` command again and including the following flag: `--extra-launch-args="--use-fallback-secret-provider"`.

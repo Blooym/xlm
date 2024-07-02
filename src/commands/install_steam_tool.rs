@@ -25,6 +25,11 @@ pub struct InstallSteamToolCommand {
     /// This can usually be left blank.
     #[clap(long = "extra-launch-args")]
     extra_launch_args: Option<String>,
+
+    /// Extra environment variables to pass to the launch command & XIVLauncher when launching from the compatibility tool.
+    /// This can usually be left blank.
+    #[clap(long = "extra-env-vars")]
+    extra_env_vars: Option<String>,
 }
 
 impl InstallSteamToolCommand {
@@ -36,16 +41,20 @@ impl InstallSteamToolCommand {
             "Setting up the XLM compatibility tool inside of {:?}",
             compat_dir
         );
+        info!(
+            "Extra launch args: {:?}, Extra env vars: {:?}",
+            self.extra_launch_args, self.extra_env_vars
+        );
         fs::create_dir_all(&compat_dir)?;
         Self::write_compatibilitytool_vdf(&compat_dir)?;
         Self::write_toolmanifest_vdf(&compat_dir)?;
-        Self::write_script(&compat_dir, self.extra_launch_args)?;
+        Self::write_script(&compat_dir, self.extra_launch_args, self.extra_env_vars)?;
         fs::copy(
             std::env::current_exe()?,
             compat_dir.join(XLM_BINARY_FILENAME),
         )?;
 
-        info!("Successfully set up compatibility tool- please restart steam for it to correctly appear.");
+        info!("Successfully set up compatibility tool please restart steam for it to correctly appear.");
         info!("Note: you are now free to delete this executable as it has been safely copied to the compatibility tool folder.");
 
         Ok(())
@@ -73,7 +82,11 @@ impl InstallSteamToolCommand {
             .write_all(TOOLMANIFEST_VDF.as_bytes())?)
     }
 
-    fn write_script(dir: &PathBuf, extra_launch_args: Option<String>) -> Result<()> {
+    fn write_script(
+        dir: &PathBuf,
+        extra_launch_args: Option<String>,
+        extra_env_vars: Option<String>,
+    ) -> Result<()> {
         debug!("Writing script");
         // Write the launcher script and ensure it's executable.
         let mut file = File::options()
@@ -94,8 +107,9 @@ if [ $1 == "run" ]; then sleep 1; exit; fi
 
 tooldir="$(realpath "$(dirname "$0")")"
 
-PATH=$PATH:$tooldir/xlcore $tooldir/xlm launch --use-fallback-secret-provider --install-directory $tooldir/xlcore {}
+PATH=$PATH:$tooldir/xlcore {} $tooldir/xlm launch {} --install-directory $tooldir/xlcore 
 "#,
+                extra_env_vars.unwrap_or_default(),
                 extra_launch_args.unwrap_or_default()
             )
             .as_bytes(),

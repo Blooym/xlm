@@ -3,7 +3,7 @@ use bytes::Buf;
 use clap::Parser;
 use eframe::egui::{self, Layout};
 use flate2::read::GzDecoder;
-use log::{error, info};
+use log::{debug, error, info};
 use octocrab::models::repos::Release;
 use reqwest::Url;
 use std::{
@@ -64,6 +64,8 @@ pub struct LaunchCommand {
 
 impl LaunchCommand {
     pub async fn run(self) -> anyhow::Result<()> {
+        debug!("Attempting launch with args: {self:?}");
+
         {
             // Query the GitHub API for release information.
             let octocrab = octocrab::instance();
