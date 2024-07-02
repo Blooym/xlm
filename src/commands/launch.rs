@@ -87,10 +87,10 @@ impl LaunchCommand {
                 Ok(ver) => {
                     if !self.skip_update {
                         if ver == release.tag_name {
-                            info!("Installed XIVLauncher is up to date!");
+                            info!("XIVLauncher is up to date!");
                         } else {
                             Self::open_xlm_wait_ui();
-                            info!("Installed XIVLauncher is out of date, starting updater...");
+                            info!("XIVLauncher is out of date, starting updater...");
                             Self::install_or_update_xlcore(
                                 release,
                                 &self.xlcore_release_asset,
