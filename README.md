@@ -15,7 +15,7 @@ To use this tool it's recommended to download the latest release from the [GitHu
 
 Please note that at this time the binary does not auto-update from GitHub releases and as such will need to be updated by hand if you wish to take advantage of new features or receive critical bugfixes. There are future plans to implement an auto-updater so this is not necessary.
 
-## Setting up as a steam compatibility tool
+### Setting up as a steam compatibility tool
 
 Once you have the XLM binary installed make sure it's set as executable. Open up a terminal and navigate to the directory where you installed the binary and run `chmod +x ./xlm`.
 
