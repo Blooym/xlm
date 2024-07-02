@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 bytes = "1.6.0"
-clap = { version = "4.5.7", features = ["derive", "string"] }
+clap = { version = "4.5.8", features = ["derive", "string"] }
 dirs = "5.0.1"
 eframe = { default-features = false, version = "0.27.2", features = [
     "default_fonts",
@@ -30,6 +30,8 @@ self_update = { version = "0.40.0", default_features = false, features = [
 tar = "0.4.41"
 tokio = { version = "1.38.0", features = ["full"] }
 anyhow = "1.0.86"
+simplelog = "0.12.2"
+log = "0.4.22"
 
 [profile.release]
 strip = true

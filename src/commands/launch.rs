@@ -3,6 +3,7 @@ use bytes::Buf;
 use clap::Parser;
 use eframe::egui::{self, Layout};
 use flate2::read::GzDecoder;
+use log::{error, info};
 use octocrab::models::repos::Release;
 use reqwest::Url;
 use std::{
@@ -18,6 +19,7 @@ use tokio::process::Command;
 use winit::platform::wayland::EventLoopBuilderExtWayland;
 
 const XLCORE_VERSIONDATA_FILENAME: &'static str = "versiondata";
+const XIVLAUNCHER_BIN_NAME: &'static str = "XIVLauncher.Core";
 
 /// Whether all egui windows should close when they next redraw.
 static UI_SHOULD_CLOSE: RwLock<bool> = RwLock::new(false);
@@ -70,7 +72,7 @@ impl LaunchCommand {
                 Ok(release) => release,
                 Err(err) => {
                     bail!(
-                        "XLM: Failed to obtain release information for {}/{}: {:?}",
+                        "Failed to obtain release information for {}/{}: {:?}",
                         self.xlcore_repo_owner,
                         self.xlcore_repo_name,
                         err.source()
@@ -83,12 +85,10 @@ impl LaunchCommand {
                 Ok(ver) => {
                     if !self.skip_update {
                         if ver == release.tag_name {
-                            println!("XLM: Installed XIVLauncher is up to date!");
+                            info!("Installed XIVLauncher is up to date!");
                         } else {
                             Self::open_xlm_wait_ui();
-                            println!(
-                                "XLM: Installed XIVLauncher is out of date, starting updater..."
-                            );
+                            info!("Installed XIVLauncher is out of date, starting updater...");
                             Self::install_or_update_xlcore(
                                 release,
                                 &self.xlcore_release_asset,
@@ -96,16 +96,16 @@ impl LaunchCommand {
                                 &self.install_directory,
                             )
                             .await?;
-                            println!("XLM: Successfully updated XIVLauncher to the latest version.")
+                            info!("Successfully updated XIVLauncher to the latest version.")
                         }
                     } else {
-                        println!("XLM: Skip update enabled, not attempting to update XIVLauncher.")
+                        info!("Skip update enabled, not attempting to update XIVLauncher.")
                     }
                 }
                 Err(err) => {
                     if err.kind() == ErrorKind::NotFound {
                         Self::open_xlm_wait_ui();
-                        println!("XLM: Unable to obtain local version data for XIVLauncher, installing from latest tag...");
+                        info!("Unable to obtain local version data for XIVLauncher, re-installing from latest tag...");
                         Self::install_or_update_xlcore(
                             release,
                             &self.xlcore_release_asset,
@@ -113,9 +113,9 @@ impl LaunchCommand {
                             &self.install_directory,
                         )
                         .await?;
-                        println!("Successfully installed XIVLauncher.")
+                        info!("Successfully installed XIVLauncher.")
                     } else {
-                        eprint!(
+                        error!(
                             "Something went wrong whilst checking for XIVLauncher: {:?}",
                             err
                         );
@@ -126,24 +126,22 @@ impl LaunchCommand {
 
         Self::close_xlm_wait_ui();
 
-        println!("XLM: Starting XIVLauncher");
+        info!("Starting XIVLauncher");
 
-        let mut cmd = Command::new(self.install_directory.join("XIVLauncher.Core"));
+        let mut cmd = Command::new(self.install_directory.join(XIVLAUNCHER_BIN_NAME));
         if self.use_fallback_secret_provider {
             cmd.env("XL_SECRET_PROVIDER", "FILE");
         }
         let cmd = cmd
             .env("XL_PRELOAD", env::var("LD_PRELOAD").unwrap_or_default()) // Write XL_PRELOAD so it can maybe be passed to the game later.
             .env("XL_SCT", "1") // Needed to trigger compatibility tool mode in XIVLauncher. Otherwise XL_PRELOAD will be ignored.
+            .env("XL_LAUNCHED_WITH", "XLM")
             .env_remove("LD_PRELOAD") // Completely remove LD_PRELOAD otherwise steam overlay will break the launcher text.
             .spawn()?
             .wait()
             .await?;
 
-        println!(
-            "XLM: XIVLauncher process exited with exit code {:?}",
-            cmd.code()
-        );
+        info!("XIVLauncher process exited with exit code {:?}", cmd.code());
 
         Ok(())
     }
@@ -162,18 +160,15 @@ impl LaunchCommand {
 
             // Download and decompress XLCore.
             {
-                println!(
-                    "XLM: Downloading release from {}",
-                    asset.browser_download_url,
-                );
+                info!("Downloading release from {}", asset.browser_download_url,);
                 let response = reqwest::get(asset.browser_download_url).await?;
                 let bytes = response.bytes().await?;
                 let mut archive = Archive::new(GzDecoder::new(bytes.reader()));
                 let _ = fs::remove_dir_all(install_location);
                 fs::create_dir_all(install_location)?;
-                println!("XLM: Unpacking release tarball");
+                info!("Unpacking release tarball");
                 archive.unpack(install_location)?;
-                println!("XLM: Wrote xivlauncher files");
+                info!("Wrote XIVLauncher files");
             }
 
             {
@@ -181,9 +176,9 @@ impl LaunchCommand {
                 let response = reqwest::get(aria_download_url).await?;
                 let bytes = response.bytes().await?;
                 let mut archive = Archive::new(GzDecoder::new(bytes.reader()));
-                println!("XLM: Unpacking aria2c tarball");
+                info!("Unpacking aria2c tarball");
                 archive.unpack(install_location)?;
-                println!("XLM: Wrote aria2c binary");
+                info!("Wrote aria2c binary");
             }
 
             {
@@ -195,7 +190,7 @@ impl LaunchCommand {
                     .append(false)
                     .open(install_location.join(XLCORE_VERSIONDATA_FILENAME))?;
                 file.write_all(release.tag_name.as_bytes())?;
-                println!("XLM: Wrote versiondata with {}", release.tag_name);
+                info!("Wrote versiondata with {}", release.tag_name);
             }
 
             break;
@@ -233,7 +228,7 @@ impl LaunchCommand {
                         ui.with_layout(
                             Layout::centered_and_justified(egui::Direction::TopDown),
                             |ui| {
-                                ui.heading("Preparing XIVLauncher, please wait patiently.");
+                                ui.heading("Preparing XIVLauncher, this may take a moment...");
                             },
                         );
                     });

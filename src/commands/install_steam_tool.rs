@@ -1,6 +1,7 @@
 use crate::includes::{COMPATIBILITYTOOL_VDF, TOOLMANIFEST_VDF};
 use anyhow::Result;
 use clap::Parser;
+use log::{debug, info};
 use std::{
     fs::{self, File},
     io::Write,
@@ -9,7 +10,8 @@ use std::{
 };
 
 const XLM_COMPAT_FOLDER_NAME: &'static str = "XLM";
-const XLM_BINARY_NAME: &'static str = "xlm";
+const XLM_BINARY_FILENAME: &'static str = "xlm";
+const XLM_SCRIPT_FILENAME: &'static str = "xlm.sh";
 
 /// Install the XLM steam compatibility tool for easier launching via Steam.
 #[derive(Debug, Clone, Parser)]
@@ -28,27 +30,29 @@ pub struct InstallSteamToolCommand {
 impl InstallSteamToolCommand {
     pub async fn run(self) -> Result<()> {
         let compat_dir = self.steam_compat_path.join(XLM_COMPAT_FOLDER_NAME);
-        println!(
+
+        // Write files
+        info!(
             "Setting up the XLM compatibility tool inside of {:?}",
             compat_dir
         );
-
         fs::create_dir_all(&compat_dir)?;
         Self::write_compatibilitytool_vdf(&compat_dir)?;
         Self::write_toolmanifest_vdf(&compat_dir)?;
         Self::write_script(&compat_dir, self.extra_launch_args)?;
-        fs::copy(std::env::current_exe()?, compat_dir.join(XLM_BINARY_NAME))?;
+        fs::copy(
+            std::env::current_exe()?,
+            compat_dir.join(XLM_BINARY_FILENAME),
+        )?;
 
-        println!(
-        "Successfully set up compatibility tool- please restart steam for it to correctly appear."
-    );
-        println!();
-        println!("Note: you are now free to delete this executable as it has been safely copied to the compatibility tool folder.");
+        info!("Successfully set up compatibility tool- please restart steam for it to correctly appear.");
+        info!("Note: you are now free to delete this executable as it has been safely copied to the compatibility tool folder.");
 
         Ok(())
     }
 
     fn write_compatibilitytool_vdf(dir: &PathBuf) -> Result<()> {
+        debug!("Writing compatibilitytool.vdf");
         Ok(File::options()
             .write(true)
             .create(true)
@@ -59,6 +63,7 @@ impl InstallSteamToolCommand {
     }
 
     fn write_toolmanifest_vdf(dir: &PathBuf) -> Result<()> {
+        debug!("Writing toolmanifest.vdf");
         Ok(File::options()
             .write(true)
             .create(true)
@@ -69,13 +74,14 @@ impl InstallSteamToolCommand {
     }
 
     fn write_script(dir: &PathBuf, extra_launch_args: Option<String>) -> Result<()> {
+        debug!("Writing script");
         // Write the launcher script and ensure it's executable.
         let mut file = File::options()
             .write(true)
             .create(true)
             .truncate(true)
             .append(false)
-            .open(dir.join("xlm.sh"))?;
+            .open(dir.join(XLM_SCRIPT_FILENAME))?;
         let mut permissions = file.metadata()?.permissions();
         permissions.set_mode(0o755);
         file.set_permissions(permissions)?;
@@ -94,7 +100,6 @@ PATH=$PATH:$tooldir/xlcore $tooldir/xlm launch --use-fallback-secret-provider --
             )
             .as_bytes(),
         )?;
-
         Ok(())
     }
 }
