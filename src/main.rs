@@ -34,7 +34,7 @@ async fn main() -> Result<()> {
             ColorChoice::Auto,
         ),
         WriteLogger::new(
-            LevelFilter::Info,
+            LevelFilter::Debug,
             Config::default(),
             File::create(temp_dir().join(format!("{}.log", env!("CARGO_PKG_NAME")))).unwrap(),
         ),
