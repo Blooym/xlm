@@ -7,7 +7,7 @@ edition = "2021"
 bytes = "1.6.0"
 clap = { version = "4.5.8", features = ["derive", "string"] }
 dirs = "5.0.1"
-eframe = { default-features = false, version = "0.27.2", features = [
+eframe = { default-features = false, version = "0.28.0", features = [
     "default_fonts",
     "glow",
     "wayland",
@@ -22,16 +22,21 @@ octocrab = "0.38.0"
 reqwest = { version = "0.12.5", default_features = false, features = [
     "rustls-tls",
 ] }
-self_update = { version = "0.40.0", default_features = false, features = [
-    "rustls",
-    "archive-tar",
-    "compression-flate2",
-] }
 tar = "0.4.41"
-tokio = { version = "1.38.0", features = ["full"] }
+tokio = { version = "1.38.0", features = [
+    "rt",
+    "rt-multi-thread",
+    "macros",
+    "process",
+] }
 anyhow = "1.0.86"
 simplelog = "0.12.2"
 log = "0.4.22"
 
 [profile.release]
 strip = true
+lto = true
+codegen-units = 1
+
+[profile.dev]
+lto = true
