@@ -37,6 +37,3 @@ log = "0.4.22"
 strip = true
 lto = true
 codegen-units = 1
-
-[profile.dev]
-lto = true
