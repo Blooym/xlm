@@ -1,50 +1,49 @@
 # XLM - XIVLauncher Manager
 
 > [!IMPORTANT]  
-> The code in this repository is considered experimental and is not finished. While I personally use this tool daily without issue, you may run into problems that I have not.
+> The code in this repository is not finished. While I personally use this tool daily without issue, you may run into problems that I have not. Please report any issues you experience on the issues tab.
 
 An alternative method for launching XIVLauncher.Core on Linux, primarily built to avoid the pitfalls of using Flatpak XIVLauncher & Steam together. It allows for launching standalone or via a steam compatibility tool while providing nice features like launcher auto-updates.
 
 ## Setup
 
-The download and setup process has yet to be streamlined and as such may not be a smooth experience. The steps listed in this guide should get you where you need to go though.
+> [!IMPORTANT]  
+> Please note that at this time the binary does not auto-update from GitHub releases and as such will need to be updated by hand if you wish to take advantage of new features or receive critical bugfixes. There are future plans to implement an auto-updater so this is not necessary, but for now just re-run the autoinstaller to update when a new version is available.
 
-### Getting the binary
+Auto installers for the steam compatibility tool part of XLM are provided for the `Steam Deck`, `Flatpak` and `Native` versions of Steam. For any other use-case you will need to manually download the XLM binary from the [GitHub Releases Page](https://github.com/Blooym/xlm/releases/latest).
 
-To use this tool it's recommended to download the latest release from the [GitHub Releases](https://github.com/Blooym/xlm/releases/latest) page. You can also compile it yourself using Rust if you so wish, however no guide is offered for that.
+### Auto Installers
 
-Please note that at this time the binary does not auto-update from GitHub releases and as such will need to be updated by hand if you wish to take advantage of new features or receive critical bugfixes. There are future plans to implement an auto-updater so this is not necessary.
-
-### Setting up as a steam compatibility tool
-
-Once you have the XLM binary installed make sure it's set as executable. Open up a terminal and navigate to the directory where you installed the binary and run `chmod +x ./xlm`.
-
-Afterwards, run one of the following commands to install XLM as a Steam compatibility tool. What command you need to run depends on how you have Steam installed.
+Run one of the following commands to install XLM as a Steam compatibility tool. What command you need to run depends on how you have Steam installed.
 
 **Steamdeck**:
-```
-./xlm install-steam-tool --extra-launch-args="--use-fallback-secret-provider" --steam-compat-path ~/.steam/root/compatibilitytools.d/
+
+```sh
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/Blooym/xlm/main/setup/install-steamdeck.sh)"
 ```
 
 **Steam (Native)**
-```
-./xlm install-steam-tool --steam-compat-path ~/.steam/root/compatibilitytools.d/
+```sh
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/Blooym/xlm/main/setup/install-native.sh)"
 ```
 
 **Steam (Flatpak)**
-```
-./xlm install-steam-tool --extra-launch-args="--use-fallback-secret-provider" --steam-compat-path ~/.var/app/com.valvesoftware.Steam/.steam/root/compatibilitytools.d/
+```sh
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/Blooym/xlm/main/setup/install-flatpak.sh)"
 ```
 
-After you've ran this do the following:
-- Switch back to gaming mode (Steamdeck) or restart Steam 
-- Navigate to your library and select "FINAL FANTASY XIV Online" 
-- Open the game properties menu and switch to the "compatibility" tab
-- Enable the "Force the use of a specific Steam Play compatibility tool" checkbox
-- From the dropdown that appears select "XLCore [XLM]" (if this does not show, please make sure you restarted Steam first)
+After the auto-installer has finished running, follow these steps to use it in Steam:
+- Switch back to gaming mode (Steam Deck) or restart Steam.
+- Navigate to your library and select "FINAL FANTASY XIV Online". 
+- Open the game properties menu and switch to the "compatibility" tab.
+- Enable the "Force the use of a specific Steam Play compatibility tool" checkbox.
+- From the dropdown that appears select "XLCore [XLM]" (if this does not show, please make sure you restarted Steam first).
 - You can now launch the game. XIVLauncher will be automatically installed to the compatibilitytools.d directory and start as usual. When you close the game, Steam will recognise this.
 
 ### Passing extra arguments or environment variables to the XIVLauncher (Advanced & Optional)
+
+> [!NOTE]  
+> This is not available when using an auto-installer. Please manually run the XLM binary to pass extra options.
 
 When installing the compatibility tool you have the option to pass extra launch arguments via the `--extra-launch-args` flag and to pass extra environment variables via the `--extra-env-vars` flag. This will allow you to, for example, override the version of XIVLauncher you're using. More information on launch flags can be found by running `xlm launch --help`.
 
