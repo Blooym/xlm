@@ -3,7 +3,7 @@
 echo "-- XLM Native Auto-Installer --"
 
 echo "[Step: 1] Downloading XLM"
-wget -q --show-progress -P /tmp https://github.com/Blooym/xlm/releases/latest/download/xlm
+curl -L https://github.com/Blooym/xlm/releases/latest/download/xlm > /tmp/xlm
 
 echo "[Step: 2] Configuring XLM as a Steam Tool"
 chmod +x /tmp/xlm
