@@ -7,9 +7,6 @@ An alternative method for launching XIVLauncher.Core on Linux, primarily built t
 
 ## Setup
 
-> [!IMPORTANT]  
-> Please note that at this time the binary does not auto-update from GitHub releases and as such will need to be updated by hand if you wish to take advantage of new features or receive critical bugfixes. There are future plans to implement an auto-updater so this is not necessary, but for now just re-run the autoinstaller to update when a new version is available.
-
 Auto installers for the steam compatibility tool part of XLM are provided for the `Steam Deck`, `Flatpak` and `Native` versions of Steam. For any other use-case you will need to manually download the XLM binary from the [GitHub Releases Page](https://github.com/Blooym/xlm/releases/latest).
 
 ### Auto Installers
