@@ -68,8 +68,8 @@ async fn main() -> Result<()> {
             use self_update::cargo_crate_version;
             debug!("Running XLM self-updater");
             let result = self_update::backends::github::Update::configure()
-                .repo_owner(&args.xlm_updater_repo_name)
-                .repo_name(&args.xlm_updater_repo_owner)
+                .repo_owner(&args.xlm_updater_repo_owner)
+                .repo_name(&args.xlm_updater_repo_name)
                 .bin_name(env!("CARGO_PKG_NAME"))
                 .show_output(false)
                 .no_confirm(true)
