@@ -37,12 +37,16 @@ After the auto-installer has finished running, follow these steps to use it in S
 - From the dropdown that appears select "XLCore [XLM]" (if this does not show, please make sure you restarted Steam first).
 - You can now launch the game. XIVLauncher will be automatically installed to the compatibilitytools.d directory and start as usual. When you close the game, Steam will recognise this.
 
-### Passing extra arguments or environment variables to XIVLauncher (Advanced & Optional)
+### Passing extra arguments or environment variables on startup (Advanced & Optional)
 
 > [!NOTE]  
 > This is not available when using an auto-installer. Please manually run the XLM binary to pass extra options.
 
-When installing the compatibility tool you have the option to pass extra launch arguments via the `--extra-launch-args` flag and to pass extra environment variables via the `--extra-env-vars` flag. This will allow you to, for example, override the version of XIVLauncher you're using. More information on launch flags can be found by running `xlm launch --help`.
+When installing the compatibility tool you have the option to pass extra launch arguments via the `--extra-launch-args` flag and to pass extra environment variables via the `--extra-env-vars` flag. This will allow you to, for example, override the version of XIVLauncher you're using. More information on launch flags can be found by running `xlm launch --help` or [viewing the code (advanced)](https://github.com/Blooym/xlm/blob/01150849865eb436bbb9477be17c40752488f463/src/commands/launch.rs#L29).
+
+#### Using a fork of XIVLauncher
+
+To use a fork of XIVLauncher you can add the flags `"--xlcore-repo-owner` and `"--xlcore-repo-name` to the `--extra-launch-args` when installing the steam compatibility tool to fetch the XIVLauncher release binary from a different source on GitHub; You can also manually edit the `xlm.sh` script in the Steam compatibility tools folder if you know how to do this. Forks of XIVLauncher can also offer their own install scripts for XLM that automate this process for you so you don't have to manually tinker, do check to see if one exists for the fork you want to use!
 
 ### "No secrets provider installed or configured"
 
