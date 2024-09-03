@@ -46,7 +46,7 @@ When installing the compatibility tool you have the option to pass extra launch 
 
 #### Using a fork of XIVLauncher
 
-To use a fork of XIVLauncher you can add the flags `"--xlcore-repo-owner` and `"--xlcore-repo-name` to the `--extra-launch-args` when installing the steam compatibility tool to fetch the XIVLauncher release binary from a different source on GitHub; You can also manually edit the `xlm.sh` script in the Steam compatibility tools folder if you know how to do this. Forks of XIVLauncher can also offer their own install scripts for XLM that automate this process for you so you don't have to manually tinker, do check to see if one exists for the fork you want to use!
+To use a fork of XIVLauncher you can add the flags `--xlcore-repo-owner` and `--xlcore-repo-name` to the `--extra-launch-args` when installing the steam compatibility tool to fetch the XIVLauncher release binary from a different source on GitHub; You can also manually edit the `xlm.sh` script in the Steam compatibility tools folder if you know how to do this. Forks of XIVLauncher can also offer their own install scripts for XLM that automate this process for you so you don't have to manually tinker, do check to see if one exists for the fork you want to use!
 
 ### "No secrets provider installed or configured"
 
