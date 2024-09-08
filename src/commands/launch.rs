@@ -18,8 +18,8 @@ use tar::Archive;
 use tokio::process::Command;
 use winit::platform::wayland::EventLoopBuilderExtWayland;
 
-const XLCORE_VERSIONDATA_FILENAME: &'static str = "versiondata";
-const XIVLAUNCHER_BIN_NAME: &'static str = "XIVLauncher.Core";
+const XLCORE_VERSIONDATA_FILENAME: &str = "versiondata";
+const XIVLAUNCHER_BIN_NAME: &str = "XIVLauncher.Core";
 
 /// Whether all egui windows should close when they next redraw.
 static UI_SHOULD_CLOSE: RwLock<bool> = RwLock::new(false);

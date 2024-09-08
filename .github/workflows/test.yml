@@ -1,0 +1,54 @@
+name: "Test"
+
+on:
+  push:
+    branches: ["main"]
+    paths:
+      - "**.rs"
+      - "static/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+  pull_request:
+    branches: ["main"]
+    paths:
+      - "**.rs"
+      - "static/**"
+      - "Cargo.toml"
+      - "Cargo.lock"
+    types: [ready_for_review, opened, synchronize]
+  workflow_dispatch:
+
+jobs:
+  Test:
+    if: github.event.pull_request.draft == false || github.event_name == 'push'
+    runs-on: ubuntu-latest
+    strategy:
+        matrix:
+          rust: [stable]
+    steps:
+      - name: GitHub Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          submodules: recursive
+
+      - name: Setup Rust toolchain
+        uses: hecrj/setup-rust-action@v2
+        with:
+          toolchain: ${{ matrix.rust }}
+          components: rustfmt, clippy
+            
+      - name: Setup Rust cache
+        uses: Swatinem/rust-cache@v2
+
+      - name: Ensure code compiles
+        run: cargo build --all --release
+
+      - name: Run Tests
+        run: cargo test --all
+
+      - name: Run Clippy
+        run: cargo clippy --all -- -D warnings
+
+      - name: Run Rustfmt
+        run: cargo fmt --all --check

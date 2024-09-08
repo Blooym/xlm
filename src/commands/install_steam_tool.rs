@@ -6,12 +6,12 @@ use std::{
     fs::{self, File},
     io::Write,
     os::unix::fs::PermissionsExt,
-    path::PathBuf,
+    path::{Path, PathBuf},
 };
 
-const XLM_COMPAT_FOLDER_NAME: &'static str = "XLM";
-const XLM_BINARY_FILENAME: &'static str = "xlm";
-const XLM_SCRIPT_FILENAME: &'static str = "xlm.sh";
+const XLM_COMPAT_FOLDER_NAME: &str = "XLM";
+const XLM_BINARY_FILENAME: &str = "xlm";
+const XLM_SCRIPT_FILENAME: &str = "xlm.sh";
 
 /// Install the XLM steam compatibility tool for easier launching via Steam.
 #[derive(Debug, Clone, Parser)]
@@ -60,7 +60,7 @@ impl InstallSteamToolCommand {
         Ok(())
     }
 
-    fn write_compatibilitytool_vdf(dir: &PathBuf) -> Result<()> {
+    fn write_compatibilitytool_vdf(dir: &Path) -> Result<()> {
         debug!("Writing compatibilitytool.vdf");
         Ok(File::options()
             .write(true)
@@ -71,7 +71,7 @@ impl InstallSteamToolCommand {
             .write_all(COMPATIBILITYTOOL_VDF.as_bytes())?)
     }
 
-    fn write_toolmanifest_vdf(dir: &PathBuf) -> Result<()> {
+    fn write_toolmanifest_vdf(dir: &Path) -> Result<()> {
         debug!("Writing toolmanifest.vdf");
         Ok(File::options()
             .write(true)
@@ -83,7 +83,7 @@ impl InstallSteamToolCommand {
     }
 
     fn write_script(
-        dir: &PathBuf,
+        dir: &Path,
         extra_launch_args: Option<String>,
         extra_env_vars: Option<String>,
     ) -> Result<()> {
