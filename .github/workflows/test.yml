@@ -18,6 +18,10 @@ on:
     types: [ready_for_review, opened, synchronize]
   workflow_dispatch:
 
+concurrency: 
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   Test:
     if: github.event.pull_request.draft == false || github.event_name == 'push'
