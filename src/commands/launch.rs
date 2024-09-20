@@ -240,7 +240,7 @@ impl LaunchCommand {
         });
     }
 
-    // Closes any running egui windows regardless of the thread they're running on.
+    /// Closes any running egui windows regardless of the thread they're running on.
     fn close_xlm_wait_ui() {
         *UI_SHOULD_CLOSE.write().unwrap() = true;
     }

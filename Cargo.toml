@@ -5,8 +5,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-bytes = "1.7.1"
-clap = { version = "4.5.16", features = ["derive", "string"] }
+bytes = "1.7.2"
+clap = { version = "4.5.18", features = ["derive", "string"] }
 dirs = "5.0.1"
 eframe = { default-features = false, version = "0.28.1", features = [
     "default_fonts",
@@ -24,13 +24,13 @@ reqwest = { version = "0.12.7", default-features = false, features = [
     "rustls-tls",
 ] }
 tar = "0.4.41"
-tokio = { version = "1.39.3", features = [
+tokio = { version = "1.40.0", features = [
     "rt",
     "rt-multi-thread",
     "macros",
     "process",
 ] }
-anyhow = "1.0.86"
+anyhow = "1.0.89"
 simplelog = "0.12.2"
 log = "0.4.22"
 self_update = { version = "0.41.0", default-features = false, features = [
