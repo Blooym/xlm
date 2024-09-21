@@ -31,7 +31,7 @@ sh -c "$(curl -fsSL https://raw.githubusercontent.com/Blooym/xlm/main/setup/inst
 
 After the auto-installer has finished running, follow these steps to use it in Steam:
 - Switch back to gaming mode (Steam Deck) or restart Steam.
-- Navigate to your library and select "FINAL FANTASY XIV Online". 
+- Navigate to your library and select "FINAL FANTASY XIV Online" or "FINAL FANTASY XIV Online Free Trial" (trial and non-steam users) 
 - Open the game properties menu and switch to the "compatibility" tab.
 - Enable the "Force the use of a specific Steam Play compatibility tool" checkbox.
 - From the dropdown that appears select "XLCore [XLM]" (if this does not show, please make sure you restarted Steam first).
