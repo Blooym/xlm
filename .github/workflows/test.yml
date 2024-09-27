@@ -46,7 +46,9 @@ jobs:
         uses: Swatinem/rust-cache@v2
 
       - name: Ensure code compiles
-        run: cargo build --all --release
+        run: |
+          cargo build --all
+          cargo build --all --release
 
       - name: Run Tests
         run: cargo test --all
