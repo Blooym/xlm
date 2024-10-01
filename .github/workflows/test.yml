@@ -39,7 +39,7 @@ jobs:
       - name: Setup Rust toolchain
         uses: hecrj/setup-rust-action@v2
         with:
-          toolchain: ${{ matrix.rust }}
+          rust-version: ${{ matrix.rust }}
           components: rustfmt, clippy
             
       - name: Setup Rust cache
