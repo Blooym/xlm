@@ -3,7 +3,7 @@
 > [!IMPORTANT]  
 > While I personally use this tool daily without issue, you may run into problems that I have not. Please report any issues you experience on the issues tab.
 
-An alternative method for launching XIVLauncher.Core on Linux, primarily built to avoid the pitfalls of using Flatpak XIVLauncher & Steam together. It allows for launching standalone or via a steam compatibility tool while providing nice features like launcher auto-updates.
+An alternative method for launching XIVLauncher.Core on Linux, primarily built to avoid the pitfalls of using Flatpak XIVLauncher & Steam together. It allows for launching standalone or via a steam compatibility tool while providing nice features like launcher auto-updates (and steam overlay support!)
 
 ## Setup
 
