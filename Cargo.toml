@@ -6,7 +6,7 @@ edition = "2021"
 
 [dependencies]
 bytes = "1.7.2"
-clap = { version = "4.5.18", features = ["derive", "string"] }
+clap = { version = "4.5.19", features = ["derive", "string"] }
 dirs = "5.0.1"
 eframe = { default-features = false, version = "0.28.1", features = [
     "default_fonts",
@@ -19,8 +19,8 @@ winit = { default-features = false, features = [
     "x11",
 ], version = "0.29.15" }
 flate2 = "1.0.34"
-octocrab = "0.40.0"
-reqwest = { version = "0.12.7", default-features = false, features = [
+octocrab = "0.41.0"
+reqwest = { version = "0.12.8", default-features = false, features = [
     "rustls-tls",
 ] }
 tar = "0.4.42"
