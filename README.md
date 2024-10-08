@@ -9,7 +9,7 @@ An alternative method for launching XIVLauncher.Core on Linux, primarily built t
 
 Auto installers for the steam compatibility tool part of XLM are provided for the `Steam Deck`, `Flatpak` and `Native` versions of Steam. For any other use-case you will need to manually download the XLM binary from the [GitHub Releases Page](https://github.com/Blooym/xlm/releases/latest).
 
-### Auto Installers
+### Installers
 
 Run one of the following commands to install XLM as a Steam compatibility tool. What command you need to run depends on how you have Steam installed.
 
@@ -34,13 +34,13 @@ sh -c "$(curl -fsSL https://raw.githubusercontent.com/Blooym/xlm/main/setup/inst
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/Blooym/xlm/main/setup/install-flatpak.sh)"
 ```
 
-After the auto-installer has finished running, follow these steps to use it in Steam:
-- Switch back to gaming mode (Steam Deck) or restart Steam.
-- Navigate to your library and select "FINAL FANTASY XIV Online" or "FINAL FANTASY XIV Online Free Trial" (trial and non-steam users) 
+After the installer has finished, please follow these steps to use the compatibility tool:
+- Switch back to gaming mode (if on Steam Deck) or restart your Steam client otherwise.
+- Navigate to your library and select "FINAL FANTASY XIV Online" or "FINAL FANTASY XIV Online Free Trial" if you are playing via the free trial or don't own the Steam edition of FFXIV. 
 - Open the game properties menu and switch to the "compatibility" tab.
 - Enable the "Force the use of a specific Steam Play compatibility tool" checkbox.
-- From the dropdown that appears select "XLCore [XLM]" (if this does not show, please make sure you restarted Steam first).
-- You can now launch the game. XIVLauncher will be automatically installed to the compatibilitytools.d directory and start as usual. When you close the game, Steam will recognise this.
+- From the box that appears select "XLCore [XLM]" (if this does not show, please make sure you properly restarted Steam).
+- You can now launch the game as usual. XIVLauncher will be automatically installed and run for you.
 
 ### Passing extra arguments or environment variables on startup (Advanced & Optional)
 
