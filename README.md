@@ -44,10 +44,13 @@ After the auto-installer has finished running, follow these steps to use it in S
 
 ### Passing extra arguments or environment variables on startup (Advanced & Optional)
 
-> [!NOTE]  
-> This is not available when using an auto-installer. Please manually run the XLM binary to pass extra options.
+When using the compatibility tool you have the option to pass extra launch arguments in two ways.
 
-When installing the compatibility tool you have the option to pass extra launch arguments via the `--extra-launch-args` flag and to pass extra environment variables via the `--extra-env-vars` flag. This will allow you to, for example, override the version of XIVLauncher you're using. More information on launch flags can be found by running `xlm launch --help` or [viewing the code (advanced)](https://github.com/Blooym/xlm/blob/01150849865eb436bbb9477be17c40752488f463/src/commands/launch.rs#L29).
+1. (For Users): You can add any available launch-command flag via Steam's "Launch Options" settings. You shouldn't need to do this by default, however it may be necessary if you would like to use a fork of XIVLauncher or for debugging and troubleshooting purposes.
+
+2. (For Developers): You can set `--extra-launch-args` & `--extra-env-vars` during the `install-steam-tool` command. These values will be passed to the launch command every time XLM is ran and will ensure users use these additional arguments by default without additional steps. This will allow you to override key behaviours of XLM (such as permanently using a fallback secrets provider). This is also the only way to set extra environment variables.
+
+More information on launch flags can be found by running `xlm launch --help` or [viewing the code (advanced)](https://github.com/Blooym/xlm/blob/01150849865eb436bbb9477be17c40752488f463/src/commands/launch.rs#L29).
 
 #### Using a fork of XIVLauncher
 

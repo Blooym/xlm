@@ -42,6 +42,7 @@ pub struct LaunchCommand {
     )]
     xlcore_release_asset: String,
 
+    /// The location of a tarball that contains a static build of aria2c.
     #[clap(
         default_value = "https://github.com/rankynbass/aria2-static-build/releases/download/v1.37.0-2/aria2-static.tar.gz",
         long = "aria-download-url"

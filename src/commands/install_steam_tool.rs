@@ -107,7 +107,7 @@ if [ $1 == "run" ]; then sleep 1; exit; fi
 
 tooldir="$(realpath "$(dirname "$0")")"
 
-PATH=$PATH:$tooldir/xlcore {} $tooldir/xlm launch {} --install-directory $tooldir/xlcore 
+PATH=$PATH:$tooldir/xlcore {} $tooldir/xlm launch {} --install-directory $tooldir/xlcore $4
 "#,
                 extra_env_vars.unwrap_or_default(),
                 extra_launch_args.unwrap_or_default()
