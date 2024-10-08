@@ -62,4 +62,4 @@ Forks of XIVLauncher can also offer their own install scripts for XLM that autom
 
 This means that XIVLauncher was unable to find a secure way to store your passwords. This is usually because you don't have a secrets manager like GNOME Keyring or KDE Wallet installed on your system. It's recommended you install a recognised and well known secrets manager to solve this problem.
 
-If you still run into this issue even with a secrets manager installed on your system, use the fallback file storage provider offered by XIVLauncher; You can tell XLM to ask XIVLauncher to enable this by running the `install-steam-tool` command again and including the following flag: `--extra-launch-args="--use-fallback-secret-provider"`.
+If you still run into this issue even with a secrets manager installed on your system, use the fallback file storage provider offered by XIVLauncher; You can tell XLM to ask XIVLauncher to enable this by adding `--use-fallback-secrets-provider` to Steam's "Launch Arguments" section. Please note that this has been done for you if you used the Steam Deck or Flatpak installation scripts. 
