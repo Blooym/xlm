@@ -42,6 +42,10 @@ pub struct LaunchCommand {
     )]
     xlcore_release_asset: String,
 
+    /// The URL to a custom release of XIVLauncher.Core. This will override the `xlcore-repo-owner` and `xlcore-repo-name` arguments.
+    #[clap(default_value = "", long = "custom-xlcore-release")]
+    custom_xlcore_release: Url,
+
     /// The location of a tarball that contains a static build of aria2c.
     #[clap(
         default_value = "https://github.com/rankynbass/aria2-static-build/releases/download/v1.37.0-2/aria2-static.tar.gz",
@@ -68,18 +72,44 @@ impl LaunchCommand {
         debug!("Attempting launch with args: {self:?}");
 
         {
-            // Query the GitHub API for release information.
-            let octocrab = octocrab::instance();
-            let repo = octocrab.repos(&self.xlcore_repo_owner, &self.xlcore_repo_name);
-            let release = match repo.releases().get_latest().await {
-                Ok(release) => release,
-                Err(err) => {
-                    bail!(
-                        "Failed to obtain release information for {}/{}: {:?}",
-                        self.xlcore_repo_owner,
-                        self.xlcore_repo_name,
-                        err.source()
-                    );
+            // Query the GitHub API or custom release Url for release information.
+            let (remote_version, remote_release) = match self.custom_xlcore_release.as_str() {
+                "" => {
+                    let octocrab = octocrab::instance();
+                    let repo = octocrab.repos(&self.xlcore_repo_owner, &self.xlcore_repo_name);
+                    let release = match repo.releases().get_latest().await {
+                        Ok(release) => release,
+                        Err(err) => {
+                            bail!(
+                                "Failed to obtain release information for {}/{}: {:?}",
+                                self.xlcore_repo_owner,
+                                self.xlcore_repo_name,
+                                err.source()
+                            );
+                        }
+                    };
+                    let release_url = release
+                        .assets
+                        .iter()
+                        .find(|asset| asset.name == self.xlcore_release_asset);
+                    if let Some(asset) = release_url {
+                        (release.tag_name, asset.browser_download_url.clone())
+                    } else {
+                        bail!(
+                            "Failed to find asset {} in release {}",
+                            self.xlcore_release_asset,
+                            release.tag_name
+                        );
+                    }
+                }
+                _ => {
+                    let version_url = self.custom_xlcore_release.join("version").unwrap();
+                    let release_url = self
+                        .custom_xlcore_release
+                        .join(&self.xlcore_release_asset)
+                        .unwrap();
+                    let response = reqwest::get(version_url).await?;
+                    (response.text().await?, release_url)
                 }
             };
 
@@ -87,14 +117,14 @@ impl LaunchCommand {
             match fs::read_to_string(self.install_directory.join(XLCORE_VERSIONDATA_FILENAME)) {
                 Ok(ver) => {
                     if !self.skip_update {
-                        if ver == release.tag_name {
+                        if ver == remote_version {
                             info!("XIVLauncher is up to date!");
                         } else {
                             Self::open_xlm_wait_ui();
                             info!("XIVLauncher is out of date - starting update");
                             Self::install_or_update_xlcore(
-                                release,
-                                &self.xlcore_release_asset,
+                                &remote_version,
+                                remote_release,
                                 self.aria_download_url,
                                 &self.install_directory,
                             )
@@ -110,8 +140,8 @@ impl LaunchCommand {
                         Self::open_xlm_wait_ui();
                         info!("Unable to obtain local version data for XIVLauncher - installing from latest tag");
                         Self::install_or_update_xlcore(
-                            release,
-                            &self.xlcore_release_asset,
+                            &remote_version,
+                            remote_release,
                             self.aria_download_url,
                             &self.install_directory,
                         )
@@ -150,52 +180,44 @@ impl LaunchCommand {
 
     /// Creates a new XLCore installation or overwrites an existing XLCore installion with a new one.
     async fn install_or_update_xlcore(
-        release: Release,
-        release_asset_name: &String,
+        release_version: &String,
+        release_url: Url,
         aria_download_url: Url,
         install_location: &PathBuf,
     ) -> anyhow::Result<()> {
-        for asset in release.assets {
-            if asset.name != *release_asset_name {
-                continue;
-            }
+        // Download and decompress XLCore.
+        {
+            info!("Downloading release from {}", release_url,);
+            let response = reqwest::get(release_url).await?;
+            let bytes = response.bytes().await?;
+            let mut archive = Archive::new(GzDecoder::new(bytes.reader()));
+            let _ = fs::remove_dir_all(install_location);
+            fs::create_dir_all(install_location)?;
+            info!("Unpacking release tarball");
+            archive.unpack(install_location)?;
+            info!("Wrote XIVLauncher files");
+        }
 
-            // Download and decompress XLCore.
-            {
-                info!("Downloading release from {}", asset.browser_download_url,);
-                let response = reqwest::get(asset.browser_download_url).await?;
-                let bytes = response.bytes().await?;
-                let mut archive = Archive::new(GzDecoder::new(bytes.reader()));
-                let _ = fs::remove_dir_all(install_location);
-                fs::create_dir_all(install_location)?;
-                info!("Unpacking release tarball");
-                archive.unpack(install_location)?;
-                info!("Wrote XIVLauncher files");
-            }
+        {
+            // Download and write aria2c
+            let response = reqwest::get(aria_download_url).await?;
+            let bytes = response.bytes().await?;
+            let mut archive = Archive::new(GzDecoder::new(bytes.reader()));
+            info!("Unpacking aria2c tarball");
+            archive.unpack(install_location)?;
+            info!("Wrote aria2c binary");
+        }
 
-            {
-                // Download and write aria2c
-                let response = reqwest::get(aria_download_url).await?;
-                let bytes = response.bytes().await?;
-                let mut archive = Archive::new(GzDecoder::new(bytes.reader()));
-                info!("Unpacking aria2c tarball");
-                archive.unpack(install_location)?;
-                info!("Wrote aria2c binary");
-            }
-
-            {
-                // Write version info into the release.
-                let mut file = File::options()
-                    .write(true)
-                    .create(true)
-                    .truncate(true)
-                    .append(false)
-                    .open(install_location.join(XLCORE_VERSIONDATA_FILENAME))?;
-                file.write_all(release.tag_name.as_bytes())?;
-                info!("Wrote versiondata with {}", release.tag_name);
-            }
-
-            break;
+        {
+            // Write version info into the release.
+            let mut file = File::options()
+                .write(true)
+                .create(true)
+                .truncate(true)
+                .append(false)
+                .open(install_location.join(XLCORE_VERSIONDATA_FILENAME))?;
+            file.write_all(release_version.as_bytes())?;
+            info!("Wrote versiondata with {}", release_version);
         }
 
         Ok(())
