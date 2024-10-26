@@ -4,7 +4,6 @@ use clap::Parser;
 use eframe::egui::{self, Layout};
 use flate2::read::GzDecoder;
 use log::{debug, error, info};
-use octocrab::models::repos::Release;
 use reqwest::Url;
 use std::{
     env,
@@ -43,6 +42,9 @@ pub struct LaunchCommand {
     xlcore_release_asset: String,
 
     /// The URL to a custom release of XIVLauncher.Core. This will override the `xlcore-repo-owner` and `xlcore-repo-name` arguments.
+    /// This should be a URL prefix that contains:
+    /// - A file called `version` that contains the version of the release.
+    /// - A file called <xlcore-release-asset> that contains the tar.gz archive of the release.
     #[clap(default_value = "", long = "custom-xlcore-release")]
     custom_xlcore_release: Url,
 
