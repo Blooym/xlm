@@ -11,7 +11,7 @@ Auto installers for the steam compatibility tool part of XLM are provided for th
 
 ### Installers
 
-Run one of the following commands to install XLM as a Steam compatibility tool. What command you need to run depends on how you have Steam installed.
+Run one of the following commands to install XLM as a Steam compatibility tool. What command you need to run depends on how you have Steam installed. **These scripts CANNOT and SHOULD NOT be run with sudo or root permissions.**
 
 **Steamdeck**:
 
