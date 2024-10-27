@@ -55,7 +55,6 @@ impl InstallSteamToolCommand {
         )?;
 
         info!("Successfully set up compatibility tool please restart steam for it to correctly appear.");
-        info!("Note: you are now free to delete this executable as it has been safely copied to the compatibility tool folder.");
 
         Ok(())
     }

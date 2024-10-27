@@ -77,8 +77,9 @@ async fn main() -> Result<()> {
                 .build()
                 .unwrap()
                 .update();
+            debug!("XLM self-updater ran successfully");
             if let Err(result) = result {
-                eprintln!("Failed to auto-update: {:?}", result);
+                eprintln!("XLM failed to auto-update: {:?}", result);
             };
         })
         .await?;

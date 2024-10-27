@@ -91,7 +91,7 @@ impl LaunchCommand {
                             info!("XIVLauncher is up to date!");
                         } else {
                             Self::open_xlm_wait_ui();
-                            info!("XIVLauncher is out of date, starting updater...");
+                            info!("XIVLauncher is out of date - starting update");
                             Self::install_or_update_xlcore(
                                 release,
                                 &self.xlcore_release_asset,
@@ -108,7 +108,7 @@ impl LaunchCommand {
                 Err(err) => {
                     if err.kind() == ErrorKind::NotFound {
                         Self::open_xlm_wait_ui();
-                        info!("Unable to obtain local version data for XIVLauncher, re-installing from latest tag...");
+                        info!("Unable to obtain local version data for XIVLauncher - installing from latest tag");
                         Self::install_or_update_xlcore(
                             release,
                             &self.xlcore_release_asset,
@@ -116,7 +116,7 @@ impl LaunchCommand {
                             &self.install_directory,
                         )
                         .await?;
-                        info!("Successfully installed XIVLauncher.")
+                        info!("Successfully installed XIVLauncher")
                     } else {
                         error!(
                             "Something went wrong whilst checking for XIVLauncher: {:?}",
@@ -138,7 +138,6 @@ impl LaunchCommand {
         let cmd = cmd
             .env("XL_PRELOAD", env::var("LD_PRELOAD").unwrap_or_default()) // Write XL_PRELOAD so it can maybe be passed to the game later.
             .env("XL_SCT", "1") // Needed to trigger compatibility tool mode in XIVLauncher. Otherwise XL_PRELOAD will be ignored.
-            .env("XL_LAUNCHED_WITH", "XLM")
             .env_remove("LD_PRELOAD") // Completely remove LD_PRELOAD otherwise steam overlay will break the launcher text.
             .spawn()?
             .wait()
