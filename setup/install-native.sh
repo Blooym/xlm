@@ -1,5 +1,10 @@
 #!/bin/bash
 
+if [[ $EUID -eq 0 ]]; then
+    echo 'Error: this script cannot be ran as the root user or with sudo. Please run it as a regular user.'
+    exit 1
+fi
+
 echo "-- XLM Native Auto-Installer --"
 echo ""
 
