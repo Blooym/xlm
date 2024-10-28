@@ -11,7 +11,7 @@ use std::{env::temp_dir, fs::File};
 
 #[derive(Debug, Clone, Parser)]
 enum Command {
-    Launch(LaunchCommand),
+    Launch(Box<LaunchCommand>),
     InstallSteamTool(InstallSteamToolCommand),
 }
 

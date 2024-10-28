@@ -75,43 +75,42 @@ impl LaunchCommand {
 
         {
             // Query the GitHub API or custom release Url for release information.
-            let (remote_version, remote_release) = if let Some(custom_xlcore_url) = self.custom_xlcore_release_url {
-                let version_url = custom_xlcore_url.join("version").unwrap();
-                let release_url = custom_xlcore_url
-                    .join(&self.xlcore_release_asset)
-                    .unwrap();
-                info!("version url: {}", version_url);
-                info!("release url:{}", release_url);
-                let response = reqwest::get(version_url).await?;
-                (response.text().await?, release_url)
-            } else {
-                let octocrab = octocrab::instance();
-                let repo = octocrab.repos(&self.xlcore_repo_owner, &self.xlcore_repo_name);
-                let release = match repo.releases().get_latest().await {
-                    Ok(release) => release,
-                    Err(err) => {
+            let (remote_version, remote_release) =
+                if let Some(custom_xlcore_url) = self.custom_xlcore_release_url {
+                    let version_url = custom_xlcore_url.join("version").unwrap();
+                    let release_url = custom_xlcore_url.join(&self.xlcore_release_asset).unwrap();
+                    info!("Custom xlcore version url: {}", version_url);
+                    info!("Custom xlcore release url:{}", release_url);
+                    let response = reqwest::get(version_url).await?;
+                    (response.text().await?, release_url)
+                } else {
+                    let octocrab = octocrab::instance();
+                    let repo = octocrab.repos(&self.xlcore_repo_owner, &self.xlcore_repo_name);
+                    let release = match repo.releases().get_latest().await {
+                        Ok(release) => release,
+                        Err(err) => {
+                            bail!(
+                                "Failed to obtain release information for {}/{}: {:?}",
+                                self.xlcore_repo_owner,
+                                self.xlcore_repo_name,
+                                err.source()
+                            );
+                        }
+                    };
+                    let release_url = release
+                        .assets
+                        .iter()
+                        .find(|asset| asset.name == self.xlcore_release_asset);
+                    if let Some(asset) = release_url {
+                        (release.tag_name, asset.browser_download_url.clone())
+                    } else {
                         bail!(
-                            "Failed to obtain release information for {}/{}: {:?}",
-                            self.xlcore_repo_owner,
-                            self.xlcore_repo_name,
-                            err.source()
+                            "Failed to find asset {} in release {}",
+                            self.xlcore_release_asset,
+                            release.tag_name
                         );
                     }
                 };
-                let release_url = release
-                    .assets
-                    .iter()
-                    .find(|asset| asset.name == self.xlcore_release_asset);
-                if let Some(asset) = release_url {
-                    (release.tag_name, asset.browser_download_url.clone())
-                } else {
-                    bail!(
-                        "Failed to find asset {} in release {}",
-                        self.xlcore_release_asset,
-                        release.tag_name
-                    );
-                }
-            };
 
             // Install XIVLauncher or do an update check if version data already exists.
             match fs::read_to_string(self.install_directory.join(XLCORE_VERSIONDATA_FILENAME)) {
