@@ -191,10 +191,7 @@ impl LaunchCommand {
         }
     }
 
-    async fn get_release_web(
-        base_url: Url,
-        xlcore_release_asset: &str,
-    ) -> Result<(String, Url)> {
+    async fn get_release_web(base_url: Url, xlcore_release_asset: &str) -> Result<(String, Url)> {
         let version_url = base_url.join("version")?;
         let release_url = base_url.join(xlcore_release_asset)?;
 
