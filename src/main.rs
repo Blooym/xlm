@@ -36,7 +36,8 @@ struct Arguments {
     xlm_updater_repo_name: String,
 
     /// Disable XLM's inbuilt self-updater. May result in an outdated binary.
-    /// Recommended to enable if GitHub rate-limiting problems occur.
+    ///
+    /// This should only be disabled if your connection to GitHub is poor or ratelimited.
     #[cfg(not(debug_assertions))]
     #[clap(global = true, default_value_t = false, long = "xlm-updater-disable")]
     xlm_updater_disable: bool,
