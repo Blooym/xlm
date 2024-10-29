@@ -64,20 +64,19 @@ async fn main() -> Result<()> {
     #[cfg(not(debug_assertions))]
     if !args.xlm_updater_disable {
         tokio::task::spawn_blocking(move || {
-            use log::debug;
+            use log::info;
             use self_update::cargo_crate_version;
-            debug!("Running XLM self-updater");
+            info!("Running XLM self-updater");
             let result = self_update::backends::github::Update::configure()
                 .repo_owner(&args.xlm_updater_repo_owner)
                 .repo_name(&args.xlm_updater_repo_name)
                 .bin_name(env!("CARGO_PKG_NAME"))
-                .show_output(false)
                 .no_confirm(true)
                 .current_version(cargo_crate_version!())
                 .build()
                 .unwrap()
                 .update();
-            debug!("XLM self-updater ran successfully");
+            info!("XLM self-updater ran successfully");
             if let Err(result) = result {
                 eprintln!("XLM failed to auto-update: {:?}", result);
             };

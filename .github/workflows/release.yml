@@ -31,9 +31,11 @@ jobs:
       - name: Build release binary
         run: cargo build --release
 
-      - name: Generate checksum
+      - name: Rename binary and generate checksum
         working-directory: ./target/release
-        run: sha256sum xlm > xlm.sha256sum
+        run: |
+          mv xlm xlm-x86_64-unknown-linux-gnu
+          sha256sum xlm-x86_64-unknown-linux-gnu > xlm-x86_64-unknown-linux-gnu.sha256sum
 
       - name: Release on GitHub
         uses: softprops/action-gh-release@v2
@@ -41,5 +43,5 @@ jobs:
           generate_release_notes: true
           fail_on_unmatched_files: true
           files: |
-            ./target/release/xlm
-            ./target/release/xlm.sha256sum
+            ./target/release/xlm-x86_64-unknown-linux-gnu
+            ./target/release/xlm-x86_64-unknown-linux-gnu.sha256sum
