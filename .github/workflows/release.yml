@@ -12,6 +12,8 @@ concurrency:
 jobs:
   Artifacts:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - name: GitHub Checkout
         uses: actions/checkout@v4
