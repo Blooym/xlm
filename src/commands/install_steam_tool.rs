@@ -102,7 +102,7 @@ impl InstallSteamToolCommand {
                 r#"#!/bin/env bash
 
 # Prevents launching twice.
-if [ $1 == "run" ]; then sleep 1; exit; fi
+if [[ "$1" == "run" ]]; then sleep 1; exit; fi
 
 tooldir="$(realpath "$(dirname "$0")")"
 
