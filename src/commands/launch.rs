@@ -217,7 +217,6 @@ impl LaunchCommand {
                         .with_inner_size([800.0, 500.0])
                         .with_resizable(false)
                         .with_decorations(false),
-                    default_theme: eframe::Theme::Dark,
                     ..Default::default()
                 },
                 move |ctx, _frame| {
