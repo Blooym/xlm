@@ -4,6 +4,7 @@ mod includes;
 use anyhow::Result;
 use clap::Parser;
 use commands::{install_steam_tool::InstallSteamToolCommand, launch::LaunchCommand};
+use log::debug;
 use simplelog::{
     ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger,
 };
@@ -55,11 +56,13 @@ async fn main() -> Result<()> {
             ColorChoice::Auto,
         ),
         WriteLogger::new(
-            LevelFilter::Debug,
+            LevelFilter::Trace,
             Config::default(),
             File::create(temp_dir().join(format!("{}.log", env!("CARGO_PKG_NAME")))).unwrap(),
         ),
     ])?;
+
+    debug!("XLM v{}", env!("CARGO_PKG_VERSION"));
 
     // Ensure the binary is up to date from GitHub releases.
     #[cfg(not(debug_assertions))]
