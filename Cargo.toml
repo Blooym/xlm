@@ -1,6 +1,8 @@
 [package]
 name = "xlm"
+description = "A painless way to use XIVLauncher on Steam Deck & Linux."
 authors = ["Blooym"]
+repository = "https://github.com/Blooym/xlm"
 version = "0.2.0"
 edition = "2021"
 
