@@ -24,7 +24,7 @@ jobs:
       - name: Setup Rust toolchain
         uses: hecrj/setup-rust-action@v2
         with:
-          toolchain: stable
+          rust-version: stable
           components: rustfmt, clippy
             
       - name: Setup Rust cache
