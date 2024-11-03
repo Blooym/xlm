@@ -1,5 +1,6 @@
 mod commands;
 mod includes;
+mod ui;
 
 use anyhow::Result;
 use clap::Parser;

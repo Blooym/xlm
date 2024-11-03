@@ -25,13 +25,13 @@ octocrab = "0.41.2"
 reqwest = { version = "0.12.9", default-features = false, features = [
     "rustls-tls",
 ] }
-tar = "0.4.42"
+tar = "0.4.43"
 tokio = { version = "1.41.0", features = [
     "rt-multi-thread",
     "macros",
     "process",
 ] }
-anyhow = "1.0.91"
+anyhow = "1.0.92"
 simplelog = "0.12.2"
 log = "0.4.22"
 self_update = { version = "0.41.0", default-features = false, features = [

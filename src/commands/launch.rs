@@ -1,7 +1,7 @@
+use crate::ui::LaunchUI;
 use anyhow::{bail, Result};
 use bytes::Buf;
 use clap::Parser;
-use eframe::egui::{self, Layout};
 use flate2::read::GzDecoder;
 use log::{debug, error, info};
 use reqwest::Url;
@@ -11,17 +11,12 @@ use std::{
     fs::{self, File},
     io::{ErrorKind, Write},
     path::PathBuf,
-    sync::RwLock,
 };
 use tar::Archive;
 use tokio::process::Command;
-use winit::platform::wayland::EventLoopBuilderExtWayland;
 
 const XLCORE_VERSIONDATA_FILENAME: &str = "versiondata";
 const XIVLAUNCHER_BIN_NAME: &str = "XIVLauncher.Core";
-
-/// Whether all egui windows should close when they next redraw.
-static UI_SHOULD_CLOSE: RwLock<bool> = RwLock::new(false);
 
 /// Install or update XIVLauncher and then open it.
 #[derive(Debug, Clone, Parser)]
@@ -92,6 +87,8 @@ impl LaunchCommand {
             }
         };
 
+        let mut launch_ui = LaunchUI::default();
+
         // Install XIVLauncher or do an update check if version data already exists locally.
         match fs::read_to_string(self.install_directory.join(XLCORE_VERSIONDATA_FILENAME)) {
             Ok(ver) => {
@@ -99,13 +96,14 @@ impl LaunchCommand {
                     if ver == remote_version {
                         info!("XIVLauncher is up to date!");
                     } else {
-                        Self::open_xlm_wait_ui();
+                        launch_ui.spawn_background();
                         info!("XIVLauncher is out of date - starting update");
                         Self::install_or_update_xlcore(
                             &remote_version,
                             remote_release_url,
                             self.aria_download_url,
                             &self.install_directory,
+                            &mut launch_ui,
                         )
                         .await?;
                         info!("Successfully updated XIVLauncher to the latest version.")
@@ -116,13 +114,14 @@ impl LaunchCommand {
             }
             Err(err) => {
                 if err.kind() == ErrorKind::NotFound {
-                    Self::open_xlm_wait_ui();
+                    launch_ui.spawn_background();
                     info!("Unable to obtain local version data for XIVLauncher - installing latest release");
                     Self::install_or_update_xlcore(
                         &remote_version,
                         remote_release_url,
                         self.aria_download_url,
                         &self.install_directory,
+                        &mut launch_ui,
                     )
                     .await?;
                     info!("Successfully installed XIVLauncher")
@@ -134,8 +133,7 @@ impl LaunchCommand {
                 }
             }
         };
-
-        Self::close_xlm_wait_ui();
+        launch_ui.kill();
 
         info!("Starting XIVLauncher");
 
@@ -211,32 +209,39 @@ impl LaunchCommand {
         release_url: Url,
         aria_download_url: Url,
         install_location: &PathBuf,
+        launch_ui: &mut LaunchUI,
     ) -> anyhow::Result<()> {
         // Download and decompress XLCore.
         {
-            info!("Downloading release from {}", release_url,);
+            info!("Downloading release from {release_url}");
+            *launch_ui.progress_text.write().unwrap() = "Downloading XIVLauncher";
             let response = reqwest::get(release_url).await?;
             let bytes = response.bytes().await?;
             let mut archive = Archive::new(GzDecoder::new(bytes.reader()));
             let _ = fs::remove_dir_all(install_location);
             fs::create_dir_all(install_location)?;
             info!("Unpacking release tarball");
+            *launch_ui.progress_text.write().unwrap() = "Extracting XIVLauncher";
             archive.unpack(install_location)?;
             info!("Wrote XIVLauncher files");
         }
 
         {
-            // Download and write aria2c
-            let response = reqwest::get(aria_download_url).await?;
+            // Download and write Aria2c
+            info!("Downloading Aria2c binary from {aria_download_url}");
+            *launch_ui.progress_text.write().unwrap() = "Installing Aria2c";
+            let response: reqwest::Response = reqwest::get(aria_download_url).await?;
             let bytes = response.bytes().await?;
             let mut archive = Archive::new(GzDecoder::new(bytes.reader()));
-            info!("Unpacking aria2c tarball");
+            info!("Unpacking Aria2c binary");
+            *launch_ui.progress_text.write().unwrap() = "Unpacking Aria2c";
             archive.unpack(install_location)?;
-            info!("Wrote aria2c binary");
+            info!("Wrote Aria2c binary");
         }
 
         {
             // Write version info into the release.
+            *launch_ui.progress_text.write().unwrap() = "Writing XIVLauncher version data";
             let mut file = File::options()
                 .write(true)
                 .create(true)
@@ -248,48 +253,5 @@ impl LaunchCommand {
         }
 
         Ok(())
-    }
-
-    /// Starts a new Tokio task and displays an egui window displaying a "XIVLauncher is starting" message.
-    /// The egui window blocks inside of the task meaning it cannot be killed by aborting the thread.
-    /// To close the window you can call [`Self::close_xlm_wait_ui`] which will close all existing windows.
-    fn open_xlm_wait_ui() {
-        *UI_SHOULD_CLOSE.write().unwrap() = false;
-        tokio::task::spawn(async move {
-            eframe::run_simple_native(
-                "XLM",
-                eframe::NativeOptions {
-                    event_loop_builder: Some(Box::new(|event_loop_builder| {
-                        event_loop_builder.with_any_thread(true);
-                    })),
-                    viewport: egui::ViewportBuilder::default()
-                        .with_inner_size([800.0, 500.0])
-                        .with_resizable(false)
-                        .with_decorations(false),
-                    ..Default::default()
-                },
-                move |ctx, _frame| {
-                    if *UI_SHOULD_CLOSE.read().unwrap() {
-                        std::process::exit(0);
-                    }
-
-                    ctx.set_pixels_per_point(1.5);
-                    egui::CentralPanel::default().show(ctx, |ui| {
-                        ui.with_layout(
-                            Layout::centered_and_justified(egui::Direction::TopDown),
-                            |ui| {
-                                ui.heading("Preparing XIVLauncher, this may take a moment...");
-                            },
-                        );
-                    });
-                },
-            )
-            .unwrap();
-        });
-    }
-
-    /// Closes any running egui windows regardless of the thread they're running on.
-    fn close_xlm_wait_ui() {
-        *UI_SHOULD_CLOSE.write().unwrap() = true;
     }
 }
