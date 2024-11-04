@@ -8,19 +8,21 @@ use std::{
 
 pub struct LaunchUI {
     child: std::process::Child,
-    // An Option is used to allow dropping the thread handle by consuming it.
-    stdin_thread: Option<std::thread::JoinHandle<()>>,
+    _stdin_thread: Option<std::thread::JoinHandle<()>>,
     tx: mpsc::Sender<String>,
 }
+
 impl LaunchUI {
     pub fn new() -> Self {
         let (tx, rx) = mpsc::channel();
 
-        let mut child = std::process::Command::new(std::env::current_exe().unwrap())
-            .arg("launch-ui")
-            .stdin(std::process::Stdio::piped())
-            .spawn()
-            .unwrap();
+        let mut child = std::process::Command::new(std::env::current_exe().unwrap());
+        #[cfg(not(debug_assertions))]
+        child.arg("--xlm-updater-disable");
+        child
+            .arg("internal-launch-ui")
+            .stdin(std::process::Stdio::piped());
+        let mut child = child.spawn().unwrap();
 
         let mut stdin = child.stdin.take().unwrap();
         let stdin_thread = std::thread::spawn(move || {
@@ -31,17 +33,18 @@ impl LaunchUI {
 
         Self {
             child,
-            stdin_thread: Some(stdin_thread),
+            _stdin_thread: Some(stdin_thread),
             tx,
         }
     }
+
     pub fn set_progress_text(&self, text: &str) {
         self.tx.send(text.to_string()).unwrap();
     }
 }
+
 impl Drop for LaunchUI {
     fn drop(&mut self) {
-        self.stdin_thread.take().unwrap().join().unwrap();
         self.child.kill().unwrap();
     }
 }
