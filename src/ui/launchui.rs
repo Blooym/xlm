@@ -1,14 +1,16 @@
 use eframe::egui::{
     Align, CentralPanel, Direction, Layout, Spinner, TopBottomPanel, ViewportBuilder,
-    ViewportCommand,
 };
-use std::sync::{Arc, RwLock};
+use std::sync::{
+    atomic::{AtomicBool, Ordering},
+    Arc, RwLock,
+};
 use winit::platform::wayland::EventLoopBuilderExtWayland;
 
 #[derive(Default)]
 pub struct LaunchUI {
     /// Whether all egui windows should close next frame.
-    should_close: Arc<RwLock<bool>>,
+    should_close: Arc<AtomicBool>,
     /// The progress text to show while XLM is performing a setup.
     pub progress_text: Arc<RwLock<&'static str>>,
 }
@@ -27,7 +29,6 @@ impl LaunchUI {
                     event_loop_builder: Some(Box::new(|event_loop_builder| {
                         event_loop_builder.with_any_thread(true);
                     })),
-                    run_and_return: true,
                     viewport: ViewportBuilder::default()
                         .with_inner_size([800.0, 500.0])
                         .with_resizable(false)
@@ -35,9 +36,8 @@ impl LaunchUI {
                     ..Default::default()
                 },
                 move |ctx, _frame| {
-                    if *close_copy.read().unwrap() {
-                        ctx.send_viewport_cmd(ViewportCommand::Close);
-                        return;
+                    if close_copy.load(Ordering::Relaxed) {
+                        std::process::exit(0);
                     }
 
                     ctx.set_pixels_per_point(1.5);
@@ -65,6 +65,6 @@ impl LaunchUI {
 
     /// Closes any running egui windows regardless of the thread they're running on.
     pub fn kill(self) {
-        *self.should_close.write().unwrap() = true;
+        self.should_close.store(true, Ordering::Relaxed);
     }
 }
