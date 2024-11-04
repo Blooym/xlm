@@ -95,6 +95,9 @@ async fn main() -> Result<()> {
     match args.command {
         Command::Launch(cmd) => cmd.run().await,
         Command::InstallSteamTool(cmd) => cmd.run().await,
-        Command::InternalLaunchUI => Ok(ui::launch_ui_main()),
+        Command::InternalLaunchUI => {
+            ui::launch_ui_main();
+            Ok(())
+        }
     }
 }
