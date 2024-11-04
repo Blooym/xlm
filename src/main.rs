@@ -16,7 +16,7 @@ enum Command {
     Launch(Box<LaunchCommand>),
     InstallSteamTool(InstallSteamToolCommand),
     #[clap(hide = true)]
-    LaunchUI,
+    InternalLaunchUI,
 }
 
 #[derive(Debug, Clone, Parser)]
@@ -95,6 +95,6 @@ async fn main() -> Result<()> {
     match args.command {
         Command::Launch(cmd) => cmd.run().await,
         Command::InstallSteamTool(cmd) => cmd.run().await,
-        Command::LaunchUI => Ok(ui::launch_ui_main()),
+        Command::InternalLaunchUI => Ok(ui::launch_ui_main()),
     }
 }
