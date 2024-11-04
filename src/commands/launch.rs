@@ -87,8 +87,6 @@ impl LaunchCommand {
             }
         };
 
-        let mut launch_ui = LaunchUI::default();
-
         // Install XIVLauncher or do an update check if version data already exists locally.
         match fs::read_to_string(self.install_directory.join(XLCORE_VERSIONDATA_FILENAME)) {
             Ok(ver) => {
@@ -96,7 +94,7 @@ impl LaunchCommand {
                     if ver == remote_version {
                         info!("XIVLauncher is up to date!");
                     } else {
-                        launch_ui.spawn_background();
+                        let mut launch_ui = LaunchUI::new();
                         info!("XIVLauncher is out of date - starting update");
                         Self::install_or_update_xlcore(
                             &remote_version,
@@ -114,7 +112,7 @@ impl LaunchCommand {
             }
             Err(err) => {
                 if err.kind() == ErrorKind::NotFound {
-                    launch_ui.spawn_background();
+                    let mut launch_ui = LaunchUI::new();
                     info!("Unable to obtain local version data for XIVLauncher - installing latest release");
                     Self::install_or_update_xlcore(
                         &remote_version,
@@ -133,7 +131,6 @@ impl LaunchCommand {
                 }
             }
         };
-        launch_ui.kill();
 
         info!("Starting XIVLauncher");
 
@@ -214,14 +211,14 @@ impl LaunchCommand {
         // Download and decompress XLCore.
         {
             info!("Downloading release from {release_url}");
-            *launch_ui.progress_text.write().unwrap() = "Downloading XIVLauncher";
+            launch_ui.set_progress_text("Downloading XIVLauncher");
             let response = reqwest::get(release_url).await?;
             let bytes = response.bytes().await?;
             let mut archive = Archive::new(GzDecoder::new(bytes.reader()));
             let _ = fs::remove_dir_all(install_location);
             fs::create_dir_all(install_location)?;
             info!("Unpacking release tarball");
-            *launch_ui.progress_text.write().unwrap() = "Extracting XIVLauncher";
+            launch_ui.set_progress_text("Extracting XIVLauncher");
             archive.unpack(install_location)?;
             info!("Wrote XIVLauncher files");
         }
@@ -229,19 +226,19 @@ impl LaunchCommand {
         {
             // Download and write Aria2c
             info!("Downloading Aria2c binary from {aria_download_url}");
-            *launch_ui.progress_text.write().unwrap() = "Installing Aria2c";
+            launch_ui.set_progress_text("Installing Aria2c");
             let response: reqwest::Response = reqwest::get(aria_download_url).await?;
             let bytes = response.bytes().await?;
             let mut archive = Archive::new(GzDecoder::new(bytes.reader()));
             info!("Unpacking Aria2c binary");
-            *launch_ui.progress_text.write().unwrap() = "Unpacking Aria2c";
+            launch_ui.set_progress_text("Unpacking Aria2c");
             archive.unpack(install_location)?;
             info!("Wrote Aria2c binary");
         }
 
         {
             // Write version info into the release.
-            *launch_ui.progress_text.write().unwrap() = "Writing XIVLauncher version data";
+            launch_ui.set_progress_text("Writing XIVLauncher version data");
             let mut file = File::options()
                 .write(true)
                 .create(true)
