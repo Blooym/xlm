@@ -15,6 +15,8 @@ use std::{env::temp_dir, fs::File};
 enum Command {
     Launch(Box<LaunchCommand>),
     InstallSteamTool(InstallSteamToolCommand),
+    #[clap(hide = true)]
+    InternalLaunchUI,
 }
 
 #[derive(Debug, Clone, Parser)]
@@ -93,5 +95,9 @@ async fn main() -> Result<()> {
     match args.command {
         Command::Launch(cmd) => cmd.run().await,
         Command::InstallSteamTool(cmd) => cmd.run().await,
+        Command::InternalLaunchUI => {
+            ui::launch_ui_main();
+            Ok(())
+        }
     }
 }
