@@ -1,4 +1,8 @@
-use crate::includes::{COMPATIBILITYTOOL_VDF, TOOLMANIFEST_VDF};
+use crate::includes::{
+    get_launch_script, COMPATIBILITYTOOL_VDF_CONTENT, COMPATIBILITYTOOL_VDF_FILENAME,
+    TOOLMANIFEST_VDF_CONTENT, TOOLMANIFEST_VDF_FILENAME, XLM_BINARY_FILENAME,
+    XLM_COMPATDIR_DIRNAME, XLM_LAUNCHSCRIPT_FILENAME,
+};
 use anyhow::Result;
 use clap::Parser;
 use log::{debug, info};
@@ -8,10 +12,6 @@ use std::{
     os::unix::fs::PermissionsExt,
     path::{Path, PathBuf},
 };
-
-const XLM_COMPAT_FOLDER_NAME: &str = "XLM";
-const XLM_BINARY_FILENAME: &str = "xlm";
-const XLM_SCRIPT_FILENAME: &str = "xlm.sh";
 
 /// Install the XLM steam compatibility tool for easier launching via Steam.
 #[derive(Debug, Clone, Parser)]
@@ -34,7 +34,7 @@ pub struct InstallSteamToolCommand {
 
 impl InstallSteamToolCommand {
     pub async fn run(self) -> Result<()> {
-        let compat_dir = self.steam_compat_path.join(XLM_COMPAT_FOLDER_NAME);
+        let compat_dir = self.steam_compat_path.join(XLM_COMPATDIR_DIRNAME);
 
         // Write files
         info!(
@@ -66,8 +66,8 @@ impl InstallSteamToolCommand {
             .create(true)
             .truncate(true)
             .append(false)
-            .open(dir.join("compatibilitytool.vdf"))?
-            .write_all(COMPATIBILITYTOOL_VDF.as_bytes())?)
+            .open(dir.join(COMPATIBILITYTOOL_VDF_FILENAME))?
+            .write_all(COMPATIBILITYTOOL_VDF_CONTENT)?)
     }
 
     fn write_toolmanifest_vdf(dir: &Path) -> Result<()> {
@@ -77,8 +77,8 @@ impl InstallSteamToolCommand {
             .create(true)
             .truncate(true)
             .append(false)
-            .open(dir.join("toolmanifest.vdf"))?
-            .write_all(TOOLMANIFEST_VDF.as_bytes())?)
+            .open(dir.join(TOOLMANIFEST_VDF_FILENAME))?
+            .write_all(TOOLMANIFEST_VDF_CONTENT)?)
     }
 
     fn write_script(
@@ -93,26 +93,11 @@ impl InstallSteamToolCommand {
             .create(true)
             .truncate(true)
             .append(false)
-            .open(dir.join(XLM_SCRIPT_FILENAME))?;
+            .open(dir.join(XLM_LAUNCHSCRIPT_FILENAME))?;
         let mut permissions = file.metadata()?.permissions();
         permissions.set_mode(0o755);
         file.set_permissions(permissions)?;
-        file.write_all(
-            format!(
-                r#"#!/bin/env bash
-
-# Prevents launching twice.
-if [[ "$1" == "run" ]]; then sleep 1; exit; fi
-
-tooldir="$(realpath "$(dirname "$0")")"
-
-PATH=$PATH:$tooldir/xlcore {} $tooldir/xlm launch {} --install-directory $tooldir/xlcore $4
-"#,
-                extra_env_vars.unwrap_or_default(),
-                extra_launch_args.unwrap_or_default()
-            )
-            .as_bytes(),
-        )?;
+        file.write_all(get_launch_script(&extra_env_vars, &extra_launch_args).as_bytes())?;
         Ok(())
     }
 }

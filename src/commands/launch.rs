@@ -15,8 +15,9 @@ use std::{
 use tar::Archive;
 use tokio::process::Command;
 
-const XLCORE_VERSIONDATA_FILENAME: &str = "versiondata";
-const XIVLAUNCHER_BIN_NAME: &str = "XIVLauncher.Core";
+const XIVLAUNCHER_BIN_FILENAME: &str = "XIVLauncher.Core";
+const XIVLAUNCHER_VERSION_REMOTE_FILENAME: &str = "version";
+const XIVLAUNCHER_VERSIONDATA_LOCAL_FILENAME: &str = "versiondata";
 
 /// Install or update XIVLauncher and then open it.
 #[derive(Debug, Clone, Parser)]
@@ -88,14 +89,19 @@ impl LaunchCommand {
         };
 
         // Install XIVLauncher or do an update check if version data already exists locally.
-        match fs::read_to_string(self.install_directory.join(XLCORE_VERSIONDATA_FILENAME)) {
+        match fs::read_to_string(
+            self.install_directory
+                .join(XIVLAUNCHER_VERSIONDATA_LOCAL_FILENAME),
+        ) {
             Ok(ver) => {
                 if !self.skip_update {
-                    if ver == remote_version {
-                        info!("XIVLauncher is up to date!");
+                    if semver::Version::parse(&ver)? >= semver::Version::parse(&remote_version)? {
+                        info!(
+                            "XIVLauncher is up to date! (local: {ver} >= remote: {remote_version})"
+                        );
                     } else {
                         let mut launch_ui = LaunchUI::new();
-                        info!("XIVLauncher is out of date - starting update");
+                        info!("XIVLauncher is out of date (local {ver} < remote: {remote_version}) - starting update");
                         Self::install_or_update_xlcore(
                             &remote_version,
                             remote_release_url,
@@ -134,7 +140,7 @@ impl LaunchCommand {
 
         info!("Starting XIVLauncher");
 
-        let mut cmd = Command::new(self.install_directory.join(XIVLAUNCHER_BIN_NAME));
+        let mut cmd = Command::new(self.install_directory.join(XIVLAUNCHER_BIN_FILENAME));
         if self.use_fallback_secret_provider {
             cmd.env("XL_SECRET_PROVIDER", "FILE");
         }
@@ -187,11 +193,11 @@ impl LaunchCommand {
     }
 
     async fn get_release_web(base_url: Url, xlcore_release_asset: &str) -> Result<(String, Url)> {
-        let version_url = base_url.join("version")?;
+        let version_url = base_url.join(XIVLAUNCHER_VERSION_REMOTE_FILENAME)?;
         let release_url = base_url.join(xlcore_release_asset)?;
 
-        info!("XLCore web release asset url:{}", release_url);
-        info!("XLCore web release version url: {}", version_url);
+        info!("XIVLauncher web release asset url:{}", release_url);
+        info!("XIVLauncher web release version url: {}", version_url);
 
         let response = reqwest::get(version_url).await?;
         if !response.status().is_success() {
@@ -244,7 +250,7 @@ impl LaunchCommand {
                 .create(true)
                 .truncate(true)
                 .append(false)
-                .open(install_location.join(XLCORE_VERSIONDATA_FILENAME))?;
+                .open(install_location.join(XIVLAUNCHER_VERSIONDATA_LOCAL_FILENAME))?;
             file.write_all(release_version.as_bytes())?;
             info!("Wrote versiondata with {}", release_version);
         }

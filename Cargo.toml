@@ -24,6 +24,8 @@ flate2 = "1.0.34"
 octocrab = "0.41.2"
 reqwest = { version = "0.12.9", default-features = false, features = [
     "rustls-tls",
+    "http2",
+    "charset",
 ] }
 tar = "0.4.43"
 tokio = { version = "1.41.0", features = [
@@ -31,7 +33,7 @@ tokio = { version = "1.41.0", features = [
     "macros",
     "process",
 ] }
-anyhow = "1.0.92"
+anyhow = "1.0.93"
 simplelog = "0.12.2"
 log = "0.4.22"
 self_update = { version = "0.41.0", default-features = false, features = [
@@ -39,6 +41,7 @@ self_update = { version = "0.41.0", default-features = false, features = [
     "archive-tar",
     "compression-flate2",
 ] }
+semver = "1.0.23"
 
 [profile.release]
 strip = true
