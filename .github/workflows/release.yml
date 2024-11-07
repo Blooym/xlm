@@ -14,6 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: write
+      attestations: write
+      id-token: write
     steps:
       - name: GitHub Checkout
         uses: actions/checkout@v4
@@ -38,6 +40,13 @@ jobs:
         run: |
           mv xlm xlm-x86_64-unknown-linux-gnu
           sha256sum xlm-x86_64-unknown-linux-gnu > xlm-x86_64-unknown-linux-gnu.sha256sum
+
+      - name: Generate artifact attestation
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-path: |
+            ./target/release/xlm-x86_64-unknown-linux-gnu
+            ./target/release/xlm-x86_64-unknown-linux-gnu.sha256sum
 
       - name: Release on GitHub
         uses: softprops/action-gh-release@v2
