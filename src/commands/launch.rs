@@ -322,6 +322,8 @@ impl LaunchCommand {
             info!("Wrote versiondata with version {}", release_version);
         }
 
+        launch_ui.set_progress_text("Finishing up");
+
         Ok(())
     }
 }
