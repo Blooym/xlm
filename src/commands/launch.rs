@@ -1,6 +1,6 @@
-use crate::ui::LaunchUI;
-use anyhow::{bail, Result};
-use bytes::Buf;
+use crate::{includes::ARIA2C_TARBALL_CONTENT, ui::LaunchUI};
+use anyhow::{bail, Context, Result};
+use bytes::{Buf, Bytes};
 use clap::Parser;
 use flate2::read::GzDecoder;
 use log::{debug, error, info};
@@ -8,9 +8,11 @@ use reqwest::Url;
 use std::{
     env,
     error::Error,
+    fmt::Display,
     fs::{self, File},
     io::{ErrorKind, Write},
     path::PathBuf,
+    str::FromStr,
 };
 use tar::Archive;
 use tokio::process::Command;
@@ -18,6 +20,47 @@ use tokio::process::Command;
 const XIVLAUNCHER_BIN_FILENAME: &str = "XIVLauncher.Core";
 const XIVLAUNCHER_VERSION_REMOTE_FILENAME: &str = "version";
 const XIVLAUNCHER_VERSIONDATA_LOCAL_FILENAME: &str = "versiondata";
+
+#[derive(Default, Clone, Debug)]
+enum AriaSource {
+    #[default]
+    Embedded,
+    Url(Url),
+    File(PathBuf),
+}
+
+impl FromStr for AriaSource {
+    type Err = &'static str;
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "embedded" => Ok(Self::Embedded),
+            _ if s.starts_with("url:") => Ok(Self::Url(
+                Url::parse(&s.chars().skip(4).collect::<String>()).unwrap(),
+            )),
+            _ if s.starts_with("file:") => {
+                let s = s.chars().skip(5).collect::<String>();
+                if !fs::exists(&s)
+                    .context("exists check operation failed")
+                    .unwrap()
+                {
+                    return Err("unable to find file at given path");
+                }
+                Ok(Self::File(PathBuf::from(s)))
+            }
+            _ => Err("valid sources are 'embedded', 'url:' or 'file:'"),
+        }
+    }
+}
+
+impl Display for AriaSource {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match &self {
+            AriaSource::Embedded => write!(f, "embedded"),
+            AriaSource::File(_) => write!(f, "file:"),
+            AriaSource::Url(_) => write!(f, "url:"),
+        }
+    }
+}
 
 /// Install or update XIVLauncher and then open it.
 #[derive(Debug, Clone, Parser)]
@@ -41,7 +84,9 @@ pub struct LaunchCommand {
     /// as it overrides the default git-based release system.
     ///
     /// This should be a URL prefix that contains:
+    ///
     /// - A file called `version` that contains the version of the release.
+    ///
     /// - A file with the name of `<xlcore-release-asset>` that contains the tar.gz archive of the release.
     #[clap(
         long = "xlcore-web-release-url-base",
@@ -50,12 +95,12 @@ pub struct LaunchCommand {
     )]
     xlcore_web_release_url_base: Option<Url>,
 
-    /// The location of a tarball that contains a static build of aria2c.
-    #[clap(
-        default_value = "https://github.com/rankynbass/aria2-static-build/releases/download/v1.37.0-2/aria2-static.tar.gz",
-        long = "aria-download-url"
-    )]
-    aria_download_url: Url,
+    /// The source of the aria2c tarball containing a static compiled 'aria2c' binary.
+    /// By default an embedded tarball will be used requiring no downloads.
+    ///
+    /// The supported source types are `file:`, `url:` or `embedded`.
+    #[clap(long = "aria-source", default_value_t = AriaSource::Embedded)]
+    aria_source: AriaSource,
 
     /// The location where the XIVLauncher should be installed.
     #[clap(default_value = dirs::data_local_dir().unwrap().join("xlcore").into_os_string(), long = "install-directory")]
@@ -105,7 +150,7 @@ impl LaunchCommand {
                         Self::install_or_update_xlcore(
                             &remote_version,
                             remote_release_url,
-                            self.aria_download_url,
+                            self.aria_source,
                             &self.install_directory,
                             &mut launch_ui,
                         )
@@ -123,7 +168,7 @@ impl LaunchCommand {
                     Self::install_or_update_xlcore(
                         &remote_version,
                         remote_release_url,
-                        self.aria_download_url,
+                        self.aria_source,
                         &self.install_directory,
                         &mut launch_ui,
                     )
@@ -210,40 +255,62 @@ impl LaunchCommand {
     async fn install_or_update_xlcore(
         release_version: &String,
         release_url: Url,
-        aria_download_url: Url,
+        aria_source: AriaSource,
         install_location: &PathBuf,
         launch_ui: &mut LaunchUI,
     ) -> anyhow::Result<()> {
-        // Download and decompress XLCore.
+        // Download/extract XLCore.
         {
-            info!("Downloading release from {release_url}");
+            info!("Downloading XIVLauncher release from {release_url}");
             launch_ui.set_progress_text("Downloading XIVLauncher");
             let response = reqwest::get(release_url).await?;
             let bytes = response.bytes().await?;
             let mut archive = Archive::new(GzDecoder::new(bytes.reader()));
             let _ = fs::remove_dir_all(install_location);
             fs::create_dir_all(install_location)?;
-            info!("Unpacking release tarball");
+            info!("Unpacking XIVLauncher release tarball");
             launch_ui.set_progress_text("Extracting XIVLauncher");
             archive.unpack(install_location)?;
             info!("Wrote XIVLauncher files");
         }
 
+        // Download/extract aria2c.
         {
-            // Download and write Aria2c
-            info!("Downloading Aria2c binary from {aria_download_url}");
-            launch_ui.set_progress_text("Installing Aria2c");
-            let response: reqwest::Response = reqwest::get(aria_download_url).await?;
-            let bytes = response.bytes().await?;
-            let mut archive = Archive::new(GzDecoder::new(bytes.reader()));
-            info!("Unpacking Aria2c binary");
-            launch_ui.set_progress_text("Unpacking Aria2c");
+            let aria_archive_bytes = match aria_source {
+                AriaSource::Embedded => {
+                    info!("Using embedded aria2c tarball");
+                    Bytes::from_static(ARIA2C_TARBALL_CONTENT)
+                }
+                AriaSource::Url(url) => {
+                    info!("Downloading remote aria2c tarball from {url}");
+                    launch_ui.set_progress_text("Downloading aria2c");
+                    let response: reqwest::Response = reqwest::get(url).await?;
+                    response.bytes().await?
+                }
+                AriaSource::File(path) => {
+                    info!("Using local aria2c tarball at path: {path:?}");
+                    Bytes::from(fs::read(path)?)
+                }
+            };
+
+            let mut archive = Archive::new(GzDecoder::new(aria_archive_bytes.reader()));
+
+            info!("Unpacking aria2c tarball");
+            launch_ui.set_progress_text("Unpacking aria2c");
             archive.unpack(install_location)?;
-            info!("Wrote Aria2c binary");
+
+            info!("Ensuring aria2c tarball contained correct binary");
+            launch_ui.set_progress_text("Ensuring aria2c compatibility");
+            if !fs::exists(install_location.join("aria2c"))? {
+                error!("aria2c tarball does not contain a binary named 'aria2c' and is unusable with XIVLauncher.");
+                bail!("aria2c tarball does not contain a binary named 'aria2c' and is unusable with XIVLauncher.")
+            }
+
+            info!("Wrote aria2c binary");
         }
 
+        // Write local version info for release.
         {
-            // Write version info into the release.
             launch_ui.set_progress_text("Writing XIVLauncher version data");
             let mut file = File::options()
                 .write(true)
@@ -252,7 +319,7 @@ impl LaunchCommand {
                 .append(false)
                 .open(install_location.join(XIVLAUNCHER_VERSIONDATA_LOCAL_FILENAME))?;
             file.write_all(release_version.as_bytes())?;
-            info!("Wrote versiondata with {}", release_version);
+            info!("Wrote versiondata with version {}", release_version);
         }
 
         Ok(())

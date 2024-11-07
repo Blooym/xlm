@@ -8,6 +8,8 @@ pub const XLM_COMPATDIR_DIRNAME: &str = "XLM";
 pub const TOOLMANIFEST_VDF_CONTENT: &[u8] = include_bytes!("../static/toolmanifest.vdf");
 /// compatibilitytool.vdf content as a collection of bytes.
 pub const COMPATIBILITYTOOL_VDF_CONTENT: &[u8] = include_bytes!("../static/compatibilitytool.vdf");
+/// aria2c tarball content as a collection of bytes.
+pub const ARIA2C_TARBALL_CONTENT: &[u8] = include_bytes!("../static/aria2c-static.tar.gz");
 
 /// Get the xlm.sh launch script as a pre-formatted string.
 pub fn get_launch_script(
