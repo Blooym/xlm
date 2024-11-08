@@ -3,7 +3,7 @@ name = "xlm"
 description = "A painless way to use XIVLauncher on Steam Deck & Linux."
 authors = ["Blooym"]
 repository = "https://github.com/Blooym/xlm"
-version = "0.3.0"
+version = "0.3.1"
 edition = "2021"
 
 [dependencies]
@@ -28,7 +28,7 @@ reqwest = { version = "0.12.9", default-features = false, features = [
     "charset",
 ] }
 tar = "0.4.43"
-tokio = { version = "1.41.0", features = [
+tokio = { version = "1.41.1", features = [
     "rt-multi-thread",
     "macros",
     "process",
@@ -41,7 +41,6 @@ self_update = { version = "0.41.0", default-features = false, features = [
     "archive-tar",
     "compression-flate2",
 ] }
-semver = "1.0.23"
 
 [profile.release]
 lto = true

@@ -140,13 +140,13 @@ impl LaunchCommand {
         ) {
             Ok(ver) => {
                 if !self.skip_update {
-                    if semver::Version::parse(&ver)? >= semver::Version::parse(&remote_version)? {
+                    if ver == remote_version {
                         info!(
-                            "XIVLauncher is up to date! (local: {ver} >= remote: {remote_version})"
+                            "XIVLauncher is up to date! (local: {ver} == remote: {remote_version})"
                         );
                     } else {
                         let mut launch_ui = LaunchUI::new();
-                        info!("XIVLauncher is out of date (local {ver} < remote: {remote_version}) - starting update");
+                        info!("XIVLauncher is out of date (local {ver} != remote: {remote_version}) - starting update");
                         Self::install_or_update_xlcore(
                             &remote_version,
                             remote_release_url,
