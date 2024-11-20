@@ -3,12 +3,12 @@ name = "xlm"
 description = "A painless way to use XIVLauncher on Steam Deck & Linux."
 authors = ["Blooym"]
 repository = "https://github.com/Blooym/xlm"
-version = "0.3.1"
+version = "0.3.2"
 edition = "2021"
 
 [dependencies]
 bytes = "1.8.0"
-clap = { version = "4.5.20", features = ["derive", "string"] }
+clap = { version = "4.5.21", features = ["derive", "string"] }
 dirs = "5.0.1"
 eframe = { default-features = false, version = "0.29.1", features = [
     "default_fonts",
@@ -20,8 +20,8 @@ winit = { default-features = false, features = [
     "wayland",
     "x11",
 ], version = "0.30.5" }
-flate2 = "1.0.34"
-octocrab = "0.41.2"
+flate2 = "1.0.35"
+octocrab = "0.42.0"
 reqwest = { version = "0.12.9", default-features = false, features = [
     "rustls-tls",
     "http2",

@@ -3,7 +3,7 @@ use crate::includes::{
     TOOLMANIFEST_VDF_CONTENT, TOOLMANIFEST_VDF_FILENAME, XLM_BINARY_FILENAME,
     XLM_COMPATDIR_DIRNAME, XLM_LAUNCHSCRIPT_FILENAME,
 };
-use anyhow::Result;
+use anyhow::{bail, Context, Result};
 use clap::Parser;
 use log::{debug, info};
 use std::{
@@ -17,7 +17,8 @@ use std::{
 #[derive(Debug, Clone, Parser)]
 pub struct InstallSteamToolCommand {
     /// The path to the 'compatibilitytools.d' folder in your steam installation directory.
-    /// Please read the manual if you don't know where this is.
+    ///
+    /// Please refer to your Steam installation if you don't know where this is, or use an install script instead.
     #[clap(long = "steam-compat-path")]
     steam_compat_path: PathBuf,
 
@@ -34,9 +35,17 @@ pub struct InstallSteamToolCommand {
 
 impl InstallSteamToolCommand {
     pub async fn run(self) -> Result<()> {
-        let compat_dir = self.steam_compat_path.join(XLM_COMPATDIR_DIRNAME);
+        // Ensure the parent of "compatibilitytools.d/" (steam install) is initialised by steam first.
+        let compat_parent = self
+            .steam_compat_path
+            .parent()
+            .context("unable to obtain parent folder to compat path.")?;
+        if !fs::exists(compat_parent)? {
+            bail!("Unable to obtain information for the parent directory of `--steam-compat-path` ({compat_parent:?}). This is likely because you have not ran Steam for the first time.");
+        };
 
         // Write files
+        let compat_dir = self.steam_compat_path.join(XLM_COMPATDIR_DIRNAME);
         info!(
             "Setting up the XLM compatibility tool inside of {:?}",
             compat_dir
@@ -54,7 +63,7 @@ impl InstallSteamToolCommand {
             compat_dir.join(XLM_BINARY_FILENAME),
         )?;
 
-        info!("Successfully set up compatibility tool please restart steam for it to correctly appear.");
+        info!("Successfully set up the XLM compatibility tool - please restart Steam for it to correctly appear.");
 
         Ok(())
     }
