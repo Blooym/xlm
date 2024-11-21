@@ -30,6 +30,7 @@ struct Arguments {
 
     /// The name of the GitHub repository owner that XLM should attempt to self-update from.
     #[cfg(not(debug_assertions))]
+    #[cfg(feature = "self_update")]
     #[clap(
         global = true,
         default_value = "Blooym",
@@ -39,6 +40,7 @@ struct Arguments {
 
     /// The name of the GitHub repository that XLM should attempt to self-update from.
     #[cfg(not(debug_assertions))]
+    #[cfg(feature = "self_update")]
     #[clap(global = true, default_value = "xlm", long = "xlm-updater-repo-name")]
     xlm_updater_repo_name: String,
 
@@ -46,6 +48,7 @@ struct Arguments {
     ///
     /// This should only be disabled if your connection to GitHub is poor or ratelimited.
     #[cfg(not(debug_assertions))]
+    #[cfg(feature = "self_update")]
     #[clap(global = true, default_value_t = false, long = "xlm-updater-disable")]
     xlm_updater_disable: bool,
 }
@@ -72,6 +75,7 @@ async fn main() -> Result<()> {
 
     // Ensure the binary is up to date from GitHub releases.
     #[cfg(not(debug_assertions))]
+    #[cfg(feature = "self_update")]
     if !args.xlm_updater_disable {
         tokio::task::spawn_blocking(move || {
             use log::info;

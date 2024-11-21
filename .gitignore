@@ -1,2 +1,4 @@
 /target
 /tmp
+flatpak-cargo-generator.py
+generated-sources.json

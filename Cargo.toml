@@ -6,6 +6,10 @@ repository = "https://github.com/Blooym/xlm"
 version = "0.3.2"
 edition = "2021"
 
+[features]
+default = ["self_update"]
+self_update = ["dep:self_update"]
+
 [dependencies]
 bytes = "1.8.0"
 clap = { version = "4.5.21", features = ["derive", "string"] }
@@ -36,7 +40,7 @@ tokio = { version = "1.41.1", features = [
 anyhow = "1.0.93"
 simplelog = "0.12.2"
 log = "0.4.22"
-self_update = { version = "0.41.0", default-features = false, features = [
+self_update = { version = "0.41.0", optional = true, default-features = false, features = [
     "rustls",
     "archive-tar",
     "compression-flate2",
