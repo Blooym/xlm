@@ -18,6 +18,7 @@ impl LaunchUI {
 
         let mut child = std::process::Command::new(std::env::current_exe().unwrap());
         #[cfg(not(debug_assertions))]
+        #[cfg(feature = "self_update")]
         child.arg("--xlm-updater-disable");
         child
             .arg("internal-launch-ui")
