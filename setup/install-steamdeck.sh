@@ -9,7 +9,12 @@ echo "-- XLM Steam Deck Auto-Installer --"
 echo ""
 
 echo "[Step: 1] Downloading XLM"
-curl -L https://github.com/Blooym/xlm/releases/latest/download/xlm-x86_64-unknown-linux-gnu > /tmp/xlm
+curl --fail -L https://github.com/Blooym/xlm/releases/latest/download/xlm-x86_64-unknown-linux-gnu > /tmp/xlm
+
+if [[ $? -ne 0 ]]; then
+    echo "Error: XLM did not appear to download correctly, this may be an issue with your network."
+    exit 1
+fi
 
 echo "[Step: 2] Configuring XLM as a Steam Tool"
 chmod +x /tmp/xlm
