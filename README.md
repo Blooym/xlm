@@ -3,11 +3,11 @@
 > [!IMPORTANT]  
 > While I personally use this tool daily without issue, you may run into problems that I have not. Please report any issues you experience on the issues tab.
 
-An alternative method for launching XIVLauncher.Core on Linux, primarily built to avoid the pitfalls of using Flatpak XIVLauncher & Steam together. It allows for launching standalone or via a steam compatibility tool while providing nice features like launcher auto-updates (and steam overlay support!)
+An alternative method for launching XIVLauncher.Core on Linux, primarily built to avoid the pitfalls of using Flatpak XIVLauncher & Steam together. It allows for launching standalone (e.g embedded in XIVLauncher packages to provide an easy autoupdater) or via a steam compatibility tool while providing nice features like launcher auto-updates (and steam overlay support!).
 
-## Setup
+## Setup (Steam compatibility tool)
 
-Auto installers for the steam compatibility tool part of XLM are provided for the `Steam Deck`, `Flatpak`, `Snap` and `Native` versions of Steam. For any other use-case you will need to manually download the XLM binary from the [GitHub Releases Page](https://github.com/Blooym/xlm/releases/latest). Regardless of where you install XLM from it will always be kept up to date automatically.
+Auto installers for the Steam compatibility tool part of XLM are provided for the `Steam Deck`, `Flatpak`, `Snap` and `Native` versions of Steam. For any other type of setup you may need to manually download the XLM binary from the [GitHub Releases Page](https://github.com/Blooym/xlm/releases/latest). Regardless of how you install XLM from it will always be kept up to date automatically.
 
 ### Installers
 
@@ -58,8 +58,12 @@ To use a fork of XIVLauncher you can add the flags `--xlcore-repo-owner` and `--
 
 Forks of XIVLauncher can also offer their own install scripts for XLM that automate this process for you so you don't have to manually tinker, so do check to see if one exists for the fork you want to use!
 
-### "No secrets provider installed or configured"
+### XIVLauncher says "No secrets provider installed or configured"
 
 This means that XIVLauncher was unable to find a secure way to store your passwords. This is usually because you don't have a secrets manager like GNOME Keyring or KDE Wallet installed on your system. It's recommended you install a recognised and well known secrets manager to solve this problem.
 
 If you still run into this issue even with a secrets manager installed on your system, use the fallback file storage provider offered by XIVLauncher; You can tell XLM to ask XIVLauncher to enable this by adding `--use-fallback-secrets-provider` to Steam's "Launch Arguments" section. Please note that this has been done for you if you used the Steam Deck or Flatpak installation scripts. 
+
+### Pre + Post launch scripts (Advanced users)
+
+When installed a Steam compatibility tool XLM supports running scripts before and after XIVLauncher has been ran. These scripts allow for running extra bash scripts to extend the functionality of XLM or XIVLauncher as required. On startup, XLM will look for directories inside of the `XLM` compatibility tool folder named `prelaunch.d` and `postlaunch.d` and run all scripts contained inside. These scripts have to be placed manually after running a script and no support is offered if you create/use a script that breaks something. 

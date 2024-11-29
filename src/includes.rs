@@ -24,7 +24,29 @@ if [[ "$1" == "run" ]]; then sleep 1; exit; fi
 
 tooldir="$(realpath "$(dirname "$0")")"
 
+# XLM pre-launch scripts.
+if [ -d $tooldir/prelaunch.d ]; then
+    for extension in $tooldir/prelaunch.d/*; do
+        if [ -f "$extension" ]; then
+            echo "Running XLM prelaunch $extension"
+            . "$extension"
+        fi
+    done
+fi
+unset extension
+
 PATH=$PATH:$tooldir/xlcore {} $tooldir/xlm launch {} --install-directory $tooldir/xlcore $4
+
+# XLM post-launch scripts.
+if [ -d $tooldir/postlaunch.d ]; then
+    for extension in $tooldir/postlaunch.d/*; do
+        if [ -f "$extension" ]; then
+            echo "Running XLM postlaunch $extension"
+            . "$extension"
+        fi
+    done
+fi
+unset extension
 "#,
         extra_env_vars.as_deref().unwrap_or_default(),
         extra_launch_args.as_deref().unwrap_or_default()
