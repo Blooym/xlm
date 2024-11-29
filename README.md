@@ -66,4 +66,4 @@ If you still run into this issue even with a secrets manager installed on your s
 
 ### Pre + Post launch scripts (Advanced users)
 
-When installed as a Steam compatibility tool XLM supports running scripts before and after XIVLauncher has been ran. These scripts allow for running extra bash scripts to extend the functionality of XLM or XIVLauncher as required. On startup, XLM will look for directories inside of the `XLM` compatibility tool folder named `prelaunch.d` and `postlaunch.d` and run all scripts contained inside. These scripts have to be placed manually after running a script and no support is offered if you create/use a script that breaks something. 
+When installed as a Steam compatibility tool XLM supports running scripts before and after XIVLauncher has been ran. These scripts allow for extending the functionality of XLM or XIVLauncher. On startup, XLM will look for directories inside of the `XLM` compatibility tool folder named `prelaunch.d` and `postlaunch.d` and run all scripts contained inside. These scripts have to be placed manually after installing XLM and no support is offered if you create/use a script that breaks something. 
