@@ -12,6 +12,7 @@ use std::{
     fs::{self, File},
     io::{ErrorKind, Write},
     path::PathBuf,
+    primitive,
     str::FromStr,
 };
 use tar::Archive;
@@ -111,6 +112,12 @@ pub struct LaunchCommand {
     #[clap(default_value_t = false, long = "use-fallback-secret-provider")]
     use_fallback_secret_provider: bool,
 
+    /// Run the launcher in Steam compatibility tool mode.
+    ///
+    /// This should be disabled if launching standalone not from a Steam compatibility tool.
+    #[clap(default_value_t = true, long = "run-as-steam-compat-tool")]
+    run_as_steam_compat_tool: primitive::bool,
+
     /// Skip checking for XIVLauncher updates. This will not prevent XIVLauncher from installing if it isn't installed.
     #[clap(default_value_t = false, long = "skip-update")]
     skip_update: bool,
@@ -189,9 +196,11 @@ impl LaunchCommand {
         if self.use_fallback_secret_provider {
             cmd.env("XL_SECRET_PROVIDER", "FILE");
         }
+        if self.run_as_steam_compat_tool {
+            cmd.env("XL_SCT", "1"); // Needed to trigger compatibility tool mode in XIVLauncher. Otherwise XL_PRELOAD will be ignored.
+        }
         let cmd = cmd
             .env("XL_PRELOAD", env::var("LD_PRELOAD").unwrap_or_default()) // Write XL_PRELOAD so it can maybe be passed to the game later.
-            .env("XL_SCT", "1") // Needed to trigger compatibility tool mode in XIVLauncher. Otherwise XL_PRELOAD will be ignored.
             .env_remove("LD_PRELOAD") // Completely remove LD_PRELOAD otherwise steam overlay will break the launcher text.
             .spawn()?
             .wait()
