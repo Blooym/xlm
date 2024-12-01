@@ -1,20 +1,16 @@
-#!/bin/bash
-
-if [[ $EUID -eq 0 ]]; then
-    echo 'Error: this script cannot be ran as the root user or with sudo. Please run it as a regular user.'
-    exit 1
-fi
+#!/bin/sh
+set -e
 
 echo "-- XLM Native Auto-Installer --"
-echo ""
+echo
+
+if [ "$(id -u)" -eq 0 ]; then
+    echo 'This script cannot be ran as the root user or with sudo. Please run it as a regular user.'
+    exit 1
+fi
 
 echo "[Step: 1] Downloading XLM"
 curl --fail -L https://github.com/Blooym/xlm/releases/latest/download/xlm-x86_64-unknown-linux-gnu > /tmp/xlm
-
-if [[ $? -ne 0 ]]; then
-    echo "Error: XLM did not appear to download correctly, this may be an issue with your network."
-    exit 1
-fi
 
 echo "[Step: 2] Configuring XLM as a Steam Tool"
 chmod +x /tmp/xlm
@@ -23,5 +19,5 @@ chmod +x /tmp/xlm
 echo "[Step: 3] Cleanup XLM binary"
 rm /tmp/xlm
 
-echo ""
+echo
 echo "-- Auto Installer Complete: Restart Steam and follow the README to continue! --"

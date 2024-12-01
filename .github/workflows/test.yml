@@ -18,7 +18,7 @@ on:
     types: [ready_for_review, opened, synchronize]
   workflow_dispatch:
 
-concurrency: 
+concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
@@ -27,8 +27,8 @@ jobs:
     if: github.event.pull_request.draft == false || github.event_name == 'push'
     runs-on: ubuntu-latest
     strategy:
-        matrix:
-          rust: [stable]
+      matrix:
+        rust: [stable]
     steps:
       - name: GitHub Checkout
         uses: actions/checkout@v4
@@ -41,7 +41,7 @@ jobs:
         with:
           rust-version: ${{ matrix.rust }}
           components: rustfmt, clippy
-            
+
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2
 
@@ -58,3 +58,10 @@ jobs:
 
       - name: Run Rustfmt
         run: cargo fmt --all --check
+
+      - name: Check scripts for bashisms
+        working-directory: ./setup
+        continue-on-error: false
+        run: |
+          sudo apt install devscripts
+          find * -type f -exec checkbashisms {} \;

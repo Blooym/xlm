@@ -2,10 +2,10 @@ name: "Release"
 
 on:
   push:
-    tags: 
-        - "v*.*.*"
+    tags:
+      - "v*.*.*"
 
-concurrency: 
+concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
@@ -28,7 +28,7 @@ jobs:
         with:
           rust-version: stable
           components: rustfmt, clippy
-            
+
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2
 
