@@ -65,5 +65,5 @@ jobs:
         working-directory: ./setup
         continue-on-error: false
         run: |
-          sudo apt install devscripts
+          sudo apt-get install -y devscripts
           find * -type f -exec checkbashisms {} \;
