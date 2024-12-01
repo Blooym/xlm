@@ -5,6 +5,7 @@ on:
     branches: ["main"]
     paths:
       - "**.rs"
+      - "scripts/**.sh"
       - "static/**"
       - "Cargo.toml"
       - "Cargo.lock"
@@ -12,6 +13,7 @@ on:
     branches: ["main"]
     paths:
       - "**.rs"
+      - "scripts/**.sh"
       - "static/**"
       - "Cargo.toml"
       - "Cargo.lock"
