@@ -13,26 +13,32 @@ Auto installers for the Steam compatibility tool part of XLM are provided for th
 
 Run one of the following commands to install XLM as a Steam compatibility tool. What command you need to run depends on how you have Steam installed. **These scripts CANNOT and SHOULD NOT be run with sudo or root permissions.**
 
-**Steamdeck**:
+Steamdeck:
 
 ```sh
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/Blooym/xlm/main/setup/install-steamdeck.sh)"
 ```
 
-**Steam (Native)**
+Steam (Native):
 ```sh
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/Blooym/xlm/main/setup/install-native.sh)"
 ```
 
-**Steam (Flatpak)**
+Steam (Flatpak):
 ```sh
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/Blooym/xlm/main/setup/install-flatpak.sh)"
 ```
 
-**Steam (Snap)** [May be broken on Wayland]
+---
+
+#### Experimental
+
+Steam (Snap) **[Experimental & Unsupported - may be broken on Wayland]**
 ```sh
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/Blooym/xlm/main/setup/install-snap.sh)"
 ```
+
+---
 
 After the installer has finished, please follow these steps to use the compatibility tool:
 - Switch back to gaming mode (if on Steam Deck) or restart your Steam client otherwise.
