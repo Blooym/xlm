@@ -33,7 +33,7 @@ sh -c "$(curl -fsSL https://raw.githubusercontent.com/Blooym/xlm/main/setup/inst
 
 #### Experimental
 
-Steam (Snap) **[Experimental & Unsupported - may be broken on Wayland]**
+Steam (Snap) **[Unsupported - may be broken on Wayland]**
 ```sh
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/Blooym/xlm/main/setup/install-snap.sh)"
 ```
