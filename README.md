@@ -24,14 +24,14 @@ sh -c "$(curl -fsSL https://raw.githubusercontent.com/Blooym/xlm/main/setup/inst
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/Blooym/xlm/main/setup/install-native.sh)"
 ```
 
-**Steam (Snap)**
-```sh
-sh -c "$(curl -fsSL https://raw.githubusercontent.com/Blooym/xlm/main/setup/install-snap.sh)"
-```
-
 **Steam (Flatpak)**
 ```sh
 sh -c "$(curl -fsSL https://raw.githubusercontent.com/Blooym/xlm/main/setup/install-flatpak.sh)"
+```
+
+**Steam (Snap)** [May be broken on Wayland]
+```sh
+sh -c "$(curl -fsSL https://raw.githubusercontent.com/Blooym/xlm/main/setup/install-snap.sh)"
 ```
 
 After the installer has finished, please follow these steps to use the compatibility tool:
