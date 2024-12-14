@@ -109,7 +109,7 @@ pub struct LaunchCommand {
 
     /// Use a fallback secrets provider with XIVLauncher instead of the system provided.
     /// Used when no system secrets provider is available and credentials should still be saved.
-    #[clap(default_value_t = false, long = "use-fallback-secret-provider")]
+    #[clap(long = "use-fallback-secret-provider")]
     use_fallback_secret_provider: bool,
 
     /// Run the launcher in Steam compatibility tool mode.
@@ -119,7 +119,7 @@ pub struct LaunchCommand {
     run_as_steam_compat_tool: primitive::bool,
 
     /// Skip checking for XIVLauncher updates. This will not prevent XIVLauncher from installing if it isn't installed.
-    #[clap(default_value_t = false, long = "skip-update")]
+    #[clap(long = "skip-update")]
     skip_update: bool,
 }
 
@@ -330,7 +330,6 @@ impl LaunchCommand {
             file.write_all(release_version.as_bytes())?;
             info!("Wrote versiondata with version {}", release_version);
         }
-
         launch_ui.set_progress_text("Finishing up");
 
         Ok(())
