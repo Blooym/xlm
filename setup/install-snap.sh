@@ -26,4 +26,4 @@ echo "[Step: 3] Cleanup XLM binary"
 rm /tmp/xlm
 
 echo
-echo "-- Auto Installer Complete: Restart Steam and follow the README to continue! --"
+echo "-- Auto Installer Complete: Restart Steam and follow the guide at https://goatcorp.github.io/faq/steamdeck or https://github.com/Blooym/xlm#readme to continue! --"
