@@ -3,7 +3,7 @@
 > [!IMPORTANT]  
 > While I personally use this tool daily without issue, you may run into problems that I have not. Please report any issues you experience on the issues tab.
 
-An alternative method for launching XIVLauncher.Core on Linux, primarily built to avoid the pitfalls of using Flatpak XIVLauncher & Steam together. It allows for launching standalone (e.g embedded in XIVLauncher packages to provide an easy autoupdater) or via a steam compatibility tool while providing nice features like launcher auto-updates (and steam overlay support!).
+An alternative method for launching XIVLauncher.Core on Linux. XLM allows for launching standalone (e.g embedded in XIVLauncher packages as a bootstrapper) or via a Steam compatibility tool whilst providing features like launcher auto-updates and Steam overlay support!.
 
 ## Setup (Steam compatibility tool)
 
@@ -47,6 +47,12 @@ After the installer has finished, please follow these steps to use the compatibi
 - Switch to the "compatibility" tab and enable the "Force the use of a specific Steam Play compatibility tool" checkbox.
 - From the box that appears select "XLCore [XLM]" (if this does not show, please make sure you properly restarted Steam).
 - You can now launch the game as usual. XIVLauncher will be automatically installed and run for you.
+
+### Migrating from a different XIVLauncher installation method 
+
+If you are using Flatpak Steam with XLM you will either need to migrate the folder at `~/.xlcore` to `~/.var/app/com.valvesoftware.Steam/.xlcore` or give the Steam flatpak access to `~/.xlcore` directly due to Flatpak filesystem sandboxing.
+
+If you previously used the Flatpak or native package version of XIVLauncher, the only thing you might want to do is uninstall the old version of XIVLauncher you were using before and remove any Steam shortcuts to XIVLauncher as these are no longer needed. All other data will be persisted as it is stored seperately on the filesystem.
 
 ### Passing extra arguments or environment variables on startup (Advanced & Optional)
 
