@@ -32,21 +32,25 @@ jobs:
       - name: Setup Rust cache
         uses: Swatinem/rust-cache@v2
 
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
+
       - name: Build release binary
         run: cargo build --release
 
-      - name: Rename binary and generate checksum
+      - name: Rename binary and generate required flatpak manifests
         working-directory: ./target/release
         run: |
           mv xlm xlm-x86_64-unknown-linux-gnu
-          sha256sum xlm-x86_64-unknown-linux-gnu > xlm-x86_64-unknown-linux-gnu.sha256sum
+          python3 flatpak-cargo-generator.py Cargo.lock
 
       - name: Generate artifact attestation
-        uses: actions/attest-build-provenance@v1
+        uses: actions/attest-build-provenance@v2
         with:
           subject-path: |
             ./target/release/xlm-x86_64-unknown-linux-gnu
-            ./target/release/xlm-x86_64-unknown-linux-gnu.sha256sum
 
       - name: Release on GitHub
         uses: softprops/action-gh-release@v2
@@ -55,4 +59,4 @@ jobs:
           fail_on_unmatched_files: true
           files: |
             ./target/release/xlm-x86_64-unknown-linux-gnu
-            ./target/release/xlm-x86_64-unknown-linux-gnu.sha256sum
+            ./generated-sources.json
