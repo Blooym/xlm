@@ -1,8 +1,5 @@
 # XLM - XIVLauncher Manager
 
-> [!IMPORTANT]  
-> While I personally use this tool daily without issue, you may run into problems that I have not. Please report any issues you experience on the issues tab.
-
 An alternative method for launching XIVLauncher.Core on Linux. XLM allows for launching standalone (e.g embedded in XIVLauncher packages as a bootstrapper) or via a Steam compatibility tool whilst providing features like launcher auto-updates and Steam overlay support!.
 
 ## Setup (Steam compatibility tool)
