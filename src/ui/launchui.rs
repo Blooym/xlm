@@ -94,7 +94,7 @@ pub fn launch_ui_main() {
             });
             CentralPanel::default().show(ctx, |ui| {
                 ui.with_layout(Layout::centered_and_justified(Direction::TopDown), |ui| {
-                    ui.heading("Starting XIVLauncher\n(this may take several minutes)");
+                    ui.heading("Starting XIVLauncher\n(this may take a moment)");
                 });
             });
         },
