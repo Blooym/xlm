@@ -4,7 +4,7 @@ An alternative method for launching XIVLauncher.Core on Linux. XLM allows for la
 
 ## Setup (Steam compatibility tool)
 
-Auto installers for the Steam compatibility tool part of XLM are provided for the `Steam Deck`, `Flatpak`, `Snap` and `Native` versions of Steam. For any other type of setup you may need to manually download the XLM binary from the [GitHub Releases Page](https://github.com/Blooym/xlm/releases/latest). Regardless of how you install XLM from it will always be kept up to date automatically.
+Auto installers for the Steam compatibility tool part of XLM are provided for the `Steam Deck`, `Flatpak`, `Snap` and `Native` versions of Steam. For any other type of setup you may need to manually download the XLM binary from the [GitHub Releases Page](https://github.com/Blooym/xlm/releases/latest) or with install it with cargo (`cargo install --git https://github.com/Blooym/xlm`). Most installs of XLM will be kept up to date automatically unless explicitly disabled.
 
 ### Installers
 
