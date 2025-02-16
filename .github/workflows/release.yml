@@ -23,6 +23,11 @@ jobs:
           fetch-depth: 0
           submodules: recursive
 
+      - name: Download flatpak-cargo-generator
+        run: |
+          wget https://raw.githubusercontent.com/flatpak/flatpak-builder-tools/refs/heads/master/cargo/flatpak-cargo-generator.py
+          wget https://raw.githubusercontent.com/flatpak/flatpak-builder-tools/refs/heads/master/cargo/pyproject.toml
+
       - name: Setup Rust
         uses: hecrj/setup-rust-action@v2
         with:
@@ -33,12 +38,13 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: 3.x
+          cache: 'pip'
 
-      - name: Generate flatpak cargo deps manifest
-        run: | 
-          wget https://raw.githubusercontent.com/flatpak/flatpak-builder-tools/refs/heads/master/cargo/flatpak-cargo-generator.py
+      - name: Run flatpak-cargo-generator
+        run: |
+          pip install .
           python3 flatpak-cargo-generator.py Cargo.lock
-    
+  
       - name: Build release binary
         run: cargo build --release
 
