@@ -37,6 +37,10 @@ jobs:
         with:
           python-version: 3.x
 
+      - name: Download flatpak cargo generator
+        run: | 
+          wget https://raw.githubusercontent.com/flatpak/flatpak-builder-tools/refs/heads/master/cargo/flatpak-cargo-generator.py
+
       - name: Build release binary
         run: cargo build --release
 
