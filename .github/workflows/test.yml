@@ -27,10 +27,7 @@ concurrency:
 jobs:
   Test:
     if: github.event.pull_request.draft == false || github.event_name == 'push'
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        rust: [stable]
+    runs-on: ubuntu-22.04
     steps:
       - name: GitHub Checkout
         uses: actions/checkout@v4
@@ -41,11 +38,8 @@ jobs:
       - name: Setup Rust toolchain
         uses: hecrj/setup-rust-action@v2
         with:
-          rust-version: ${{ matrix.rust }}
           components: rustfmt, clippy
-
-      - name: Setup Rust cache
-        uses: Swatinem/rust-cache@v2
+          cache: true
 
       - name: Ensure code compiles
         run: |

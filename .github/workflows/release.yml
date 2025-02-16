@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   Artifacts:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
     permissions:
       contents: write
       attestations: write
@@ -23,28 +23,12 @@ jobs:
           fetch-depth: 0
           submodules: recursive
 
-      - name: Download flatpak-cargo-generator
-        run: |
-          wget https://raw.githubusercontent.com/flatpak/flatpak-builder-tools/refs/heads/master/cargo/flatpak-cargo-generator.py
-          wget https://raw.githubusercontent.com/flatpak/flatpak-builder-tools/refs/heads/master/cargo/pyproject.toml
-
       - name: Setup Rust
         uses: hecrj/setup-rust-action@v2
         with:
-          rust-version: stable
           components: rustfmt, clippy
+          cache: true
 
-      - name: Setup Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: 3.x
-
-      - name: Run flatpak-cargo-generator
-        run: |
-          pipx install poetry
-          poetry install
-          poetry run python flatpak-cargo-generator.py Cargo.lock
-  
       - name: Build release binary
         run: cargo build --release
 
@@ -66,4 +50,3 @@ jobs:
           fail_on_unmatched_files: true
           files: |
             ./target/release/xlm-x86_64-unknown-linux-gnu
-            ./generated-sources.json
