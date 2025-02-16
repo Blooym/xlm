@@ -29,9 +29,6 @@ jobs:
           rust-version: stable
           components: rustfmt, clippy
 
-      - name: Setup Rust cache
-        uses: Swatinem/rust-cache@v2
-
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
