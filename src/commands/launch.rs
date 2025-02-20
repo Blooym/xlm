@@ -1,5 +1,5 @@
 use crate::{includes::ARIA2C_TARBALL_CONTENT, ui::LaunchUI};
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use bytes::{Buf, Bytes};
 use clap::Parser;
 use flate2::read::GzDecoder;
@@ -153,7 +153,9 @@ impl LaunchCommand {
                         );
                     } else {
                         let mut launch_ui = LaunchUI::new();
-                        info!("XIVLauncher is out of date (local {ver} != remote: {remote_version}) - starting update");
+                        info!(
+                            "XIVLauncher is out of date (local {ver} != remote: {remote_version}) - starting update"
+                        );
                         Self::install_or_update_xlcore(
                             &remote_version,
                             remote_release_url,
@@ -171,7 +173,9 @@ impl LaunchCommand {
             Err(err) => {
                 if err.kind() == ErrorKind::NotFound {
                     let mut launch_ui = LaunchUI::new();
-                    info!("Unable to obtain local version data for XIVLauncher - installing latest release");
+                    info!(
+                        "Unable to obtain local version data for XIVLauncher - installing latest release"
+                    );
                     Self::install_or_update_xlcore(
                         &remote_version,
                         remote_release_url,
@@ -311,8 +315,12 @@ impl LaunchCommand {
             info!("Ensuring aria2c tarball contained correct binary");
             launch_ui.set_progress_text("Ensuring aria2c compatibility");
             if !fs::exists(install_location.join("aria2c"))? {
-                error!("aria2c tarball does not contain a binary named 'aria2c' and is unusable with XIVLauncher.");
-                bail!("aria2c tarball does not contain a binary named 'aria2c' and is unusable with XIVLauncher.")
+                error!(
+                    "aria2c tarball does not contain a binary named 'aria2c' and is unusable with XIVLauncher."
+                );
+                bail!(
+                    "aria2c tarball does not contain a binary named 'aria2c' and is unusable with XIVLauncher."
+                )
             }
 
             info!("Wrote aria2c binary");

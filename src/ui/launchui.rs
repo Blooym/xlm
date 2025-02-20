@@ -3,7 +3,7 @@ use eframe::egui::{
 };
 use std::{
     io::{self, BufRead, Write},
-    sync::{mpsc, Arc, RwLock},
+    sync::{Arc, RwLock, mpsc},
 };
 
 pub struct LaunchUI {

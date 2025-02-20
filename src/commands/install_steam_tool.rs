@@ -1,9 +1,9 @@
 use crate::includes::{
-    get_launch_script, COMPATIBILITYTOOL_VDF_CONTENT, COMPATIBILITYTOOL_VDF_FILENAME,
-    TOOLMANIFEST_VDF_CONTENT, TOOLMANIFEST_VDF_FILENAME, XLM_BINARY_FILENAME,
-    XLM_COMPATDIR_DIRNAME, XLM_LAUNCHSCRIPT_FILENAME,
+    COMPATIBILITYTOOL_VDF_CONTENT, COMPATIBILITYTOOL_VDF_FILENAME, TOOLMANIFEST_VDF_CONTENT,
+    TOOLMANIFEST_VDF_FILENAME, XLM_BINARY_FILENAME, XLM_COMPATDIR_DIRNAME,
+    XLM_LAUNCHSCRIPT_FILENAME, get_launch_script,
 };
-use anyhow::{bail, Context, Result};
+use anyhow::{Context, Result, bail};
 use clap::Parser;
 use log::{debug, info};
 use std::{
@@ -41,7 +41,9 @@ impl InstallSteamToolCommand {
             .parent()
             .context("unable to obtain parent folder to compat path.")?;
         if !fs::exists(compat_parent)? {
-            bail!("Unable to obtain information for the parent directory of `--steam-compat-path` ({compat_parent:?}). This is likely because you have not ran Steam for the first time.");
+            bail!(
+                "Unable to obtain information for the parent directory of `--steam-compat-path` ({compat_parent:?}). This is likely because you have not ran Steam for the first time."
+            );
         };
 
         // Write files
@@ -63,7 +65,9 @@ impl InstallSteamToolCommand {
             compat_dir.join(XLM_BINARY_FILENAME),
         )?;
 
-        info!("Successfully set up the XLM compatibility tool - please restart Steam for it to correctly appear.");
+        info!(
+            "Successfully set up the XLM compatibility tool - please restart Steam for it to correctly appear."
+        );
 
         Ok(())
     }
