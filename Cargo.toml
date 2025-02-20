@@ -4,7 +4,7 @@ description = "A painless way to use XIVLauncher on Steam Deck & Linux."
 authors = ["Blooym"]
 repository = "https://github.com/Blooym/xlm"
 version = "0.3.8"
-edition = "2021"
+edition = "2024"
 
 [features]
 default = ["self_update"]
@@ -12,7 +12,7 @@ self_update = ["dep:self_update"]
 
 [dependencies]
 bytes = "1.10.0"
-clap = { version = "4.5.29", features = ["derive", "string"] }
+clap = { version = "4.5.30", features = ["derive", "string"] }
 dirs = "6.0.0"
 eframe = { default-features = false, version = "0.31.0", features = [
     "default_fonts",
@@ -37,7 +37,7 @@ tokio = { version = "1.43.0", features = [
     "macros",
     "process",
 ] }
-anyhow = "1.0.95"
+anyhow = "1.0.96"
 simplelog = "0.12.2"
 log = "0.4.25"
 self_update = { version = "0.42.0", optional = true, default-features = false, features = [
