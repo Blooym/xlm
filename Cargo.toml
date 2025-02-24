@@ -20,10 +20,6 @@ eframe = { default-features = false, version = "0.31.0", features = [
     "wayland",
     "x11",
 ] }
-winit = { version = "0.30.9", default-features = false, features = [
-    "wayland",
-    "x11",
-] }
 flate2 = "1.0.35"
 octocrab = "0.43.0"
 reqwest = { version = "0.12.12", default-features = false, features = [
@@ -31,7 +27,7 @@ reqwest = { version = "0.12.12", default-features = false, features = [
     "http2",
     "charset",
 ] }
-tar = "0.4.43"
+tar = "0.4.44"
 tokio = { version = "1.43.0", features = [
     "rt-multi-thread",
     "macros",
@@ -39,7 +35,7 @@ tokio = { version = "1.43.0", features = [
 ] }
 anyhow = "1.0.96"
 simplelog = "0.12.2"
-log = "0.4.25"
+log = "0.4.26"
 self_update = { version = "0.42.0", optional = true, default-features = false, features = [
     "rustls",
     "archive-tar",
