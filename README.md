@@ -39,7 +39,7 @@ sh -c "$(curl -fsSL https://raw.githubusercontent.com/Blooym/xlm/main/setup/inst
 
 After the installer has finished, please follow these steps to use the compatibility tool:
 - Switch back to gaming mode (if on Steam Deck) or restart your Steam client otherwise.
-- Navigate to your library and select "FINAL FANTASY XIV Online" or "FINAL FANTASY XIV Online Free Trial" if you are playing via the free trial or don't own the Steam edition of FFXIV. 
+- Navigate to your library and select "FINAL FANTASY XIV Online" or "FINAL FANTASY XIV Online Free Trial" if you are playing via the free trial or don't own the Steam edition of FFXIV (or pick a game of your choice, as long as it's a Steam game). 
 - Open the game properties menu and make sure the "Launch Options" field is empty. 
 - Switch to the "compatibility" tab and enable the "Force the use of a specific Steam Play compatibility tool" checkbox.
 - From the box that appears select "XLCore [XLM]" (if this does not show, please make sure you properly restarted Steam).
