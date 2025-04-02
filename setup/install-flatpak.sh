@@ -1,5 +1,4 @@
-#!/bin/sh
-set -e
+#!/bin/sh -e
 
 echo "-- XLM Flatpak Auto-Installer --"
 echo

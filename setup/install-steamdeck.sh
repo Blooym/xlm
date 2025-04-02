@@ -1,5 +1,4 @@
-#!/bin/sh
-set -e
+#!/bin/sh -e
 
 echo "-- XLM Steam Deck Auto-Installer --"
 echo
