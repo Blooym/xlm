@@ -56,8 +56,8 @@ pub struct LaunchCommand {
     )]
     xlcore_web_release_url_base: Option<Url>,
 
-    /// The source of the aria2c tarball containing a static compiled 'aria2c' binary.
-    /// By default an embedded tarball will be used requiring no downloads.
+    /// Source of an aria2c tarball containing a statically compiled `aria2c`` binary.
+    /// By default an embedded tarball will be used.
     ///
     /// The supported source types are `file:`, `url:` or `embedded`.
     #[clap(long = "aria-source", default_value_t = AriaSource::Embedded)]
@@ -112,7 +112,8 @@ impl LaunchCommand {
         };
 
         // Conditionally run update check/install depending on flags and versions.
-        if fs::exists(self.install_directory.join(XIVLAUNCHER_BIN_FILENAME))? && self.skip_update {
+        let xl_installed = fs::exists(self.install_directory.join(XIVLAUNCHER_BIN_FILENAME))?;
+        if xl_installed && self.skip_update {
             info!(
                 "XIVLauncher already installed & version checks are disabled, skipping the update process"
             );
@@ -121,16 +122,16 @@ impl LaunchCommand {
                 self.install_directory
                     .join(XIVLAUNCHER_VERSIONDATA_LOCAL_FILENAME),
             ) {
-                Ok(ver) => {
-                    if ver == release.version {
+                Ok(local_ver) => {
+                    if xl_installed && local_ver == release.version {
                         info!(
-                            "XIVLauncher is up to date (local: {ver} == remote: {})",
+                            "XIVLauncher is up to date (local: {local_ver} == remote: {})",
                             release.version
                         );
                     } else {
                         let launch_ui = LaunchUI::new();
                         info!(
-                            "XIVLauncher is out of date (local {ver} != remote: {}) - starting update",
+                            "XIVLauncher is out of date or missing files (local {local_ver} != remote: {}, bin present: {xl_installed}) - starting update",
                             release.version
                         );
                         install_or_update_xlcore(
