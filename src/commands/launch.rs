@@ -1,8 +1,8 @@
-use crate::{includes::ARIA2C_TARBALL_CONTENT, ui::LaunchUI};
+use crate::{includes::EMBEDDED_ARIA2C_TARBALL, ui::LaunchUI};
 use anyhow::{Context, Result, bail};
 use bytes::{Buf, Bytes};
 use clap::Parser;
-use flate2::read::GzDecoder;
+use flate2::bufread::GzDecoder;
 use log::{debug, error, info};
 use reqwest::Url;
 use std::{
@@ -21,9 +21,270 @@ use tokio::process::Command;
 const XIVLAUNCHER_BIN_FILENAME: &str = "XIVLauncher.Core";
 const XIVLAUNCHER_VERSION_REMOTE_FILENAME: &str = "version";
 const XIVLAUNCHER_VERSIONDATA_LOCAL_FILENAME: &str = "versiondata";
+const ARIA2C_BIN_FILENAME: &str = "aria2c";
+
+/// Install or update XIVLauncher and then open it.
+#[derive(Debug, Clone, Parser)]
+pub struct LaunchCommand {
+    /// The name of the GitHub repository owner for XIVLauncher.
+    #[clap(default_value = "goatcorp", long = "xlcore-repo-owner")]
+    xlcore_repo_owner: String,
+
+    /// The name of the GitHub repository for XIVLauncher.
+    #[clap(default_value = "XIVLauncher.Core", long = "xlcore-repo-name")]
+    xlcore_repo_name: String,
+
+    /// The name of the release tar.gz archive that contains a self-contained XIVLauncher.
+    #[clap(
+        default_value = "XIVLauncher.Core.tar.gz",
+        long = "xlcore-release-asset"
+    )]
+    xlcore_release_asset: String,
+
+    /// The URL to a release of XIVLauncher.Core. This conflicts with `xlcore-repo-owner` and `xlcore-repo-name`
+    /// as it overrides the default git-based release system.
+    ///
+    /// This should be a URL base that contains the following under it:
+    ///
+    /// - A plaintext file named `version` that contains only a version number.
+    ///
+    /// - A tar.gz archive with the name of `--xlcore-release-asset` that contains XIVLauncher files.
+    #[clap(
+        long = "xlcore-web-release-url-base",
+        conflicts_with = "xlcore_repo_name",
+        conflicts_with = "xlcore_repo_owner"
+    )]
+    xlcore_web_release_url_base: Option<Url>,
+
+    /// The source of the aria2c tarball containing a static compiled 'aria2c' binary.
+    /// By default an embedded tarball will be used requiring no downloads.
+    ///
+    /// The supported source types are `file:`, `url:` or `embedded`.
+    #[clap(long = "aria-source", default_value_t = AriaSource::Embedded)]
+    aria_source: AriaSource,
+
+    /// The location where XIVLauncher should be installed.
+    #[clap(default_value = dirs::data_local_dir().unwrap().join("xlcore").into_os_string(), long = "install-directory")]
+    install_directory: PathBuf,
+
+    /// Use XIVLauncher's fallback secrets provider instead of the system's `libsecret` provider.
+    ///
+    /// This should be used when no compatiable system secrets provider is available where
+    /// credential saving is still desirable.
+    #[clap(long = "use-fallback-secret-provider")]
+    use_fallback_secret_provider: bool,
+
+    /// Run the launcher in Steam compatibility tool mode.
+    ///
+    /// This should be disabled if launching standalone instead of from a Steam compatibility tool.
+    #[clap(default_value_t = true, long = "run-as-steam-compat-tool")]
+    run_as_steam_compat_tool: primitive::bool,
+
+    /// Skip checking for & installing new XIVLauncher versions.
+    ///
+    /// Note: this will not prevent XIVLauncher from installing if it does not exist at all.
+    #[clap(long = "skip-update")]
+    skip_update: bool,
+}
+
+impl LaunchCommand {
+    pub async fn run(self) -> anyhow::Result<()> {
+        info!("Attempting launch with: {self:?}");
+
+        // Query the GitHub API or Web Release URL for release information.
+        let release = match self.xlcore_web_release_url_base {
+            Some(url) => {
+                ReleaseAssetInfo::from_url(
+                    url,
+                    &self.xlcore_release_asset,
+                    XIVLAUNCHER_VERSION_REMOTE_FILENAME,
+                )
+                .await?
+            }
+            None => {
+                ReleaseAssetInfo::from_github(
+                    &self.xlcore_repo_owner,
+                    &self.xlcore_repo_name,
+                    &self.xlcore_release_asset,
+                )
+                .await?
+            }
+        };
+
+        // Conditionally run update check/install depending on flags and versions.
+        if fs::exists(self.install_directory.join(XIVLAUNCHER_BIN_FILENAME))? && self.skip_update {
+            info!(
+                "XIVLauncher already installed & version checks are disabled, skipping the update process"
+            );
+        } else {
+            match fs::read_to_string(
+                self.install_directory
+                    .join(XIVLAUNCHER_VERSIONDATA_LOCAL_FILENAME),
+            ) {
+                Ok(ver) => {
+                    if ver == release.version {
+                        info!(
+                            "XIVLauncher is up to date (local: {ver} == remote: {})",
+                            release.version
+                        );
+                    } else {
+                        let launch_ui = LaunchUI::new();
+                        info!(
+                            "XIVLauncher is out of date (local {ver} != remote: {}) - starting update",
+                            release.version
+                        );
+                        install_or_update_xlcore(
+                            release,
+                            self.aria_source,
+                            &self.install_directory,
+                            true,
+                            |txt| launch_ui.set_progress_text(txt),
+                        )
+                        .await?;
+                        info!("Successfully updated XIVLauncher to the latest version.")
+                    }
+                }
+                Err(err) => {
+                    if err.kind() == ErrorKind::NotFound {
+                        let launch_ui = LaunchUI::new();
+                        info!(
+                            "Unable to obtain local version data for XIVLauncher - installing latest release"
+                        );
+                        install_or_update_xlcore(
+                            release,
+                            self.aria_source,
+                            &self.install_directory,
+                            false,
+                            |txt| launch_ui.set_progress_text(txt),
+                        )
+                        .await?;
+                        info!("Successfully installed XIVLauncher")
+                    } else {
+                        error!(
+                            "Something went wrong whilst checking for XIVLauncher: {:?}",
+                            err
+                        );
+                    }
+                }
+            };
+        }
+
+        info!("Starting XIVLauncher");
+        let mut cmd = Command::new(self.install_directory.join(XIVLAUNCHER_BIN_FILENAME));
+        if self.use_fallback_secret_provider {
+            cmd.env("XL_SECRET_PROVIDER", "FILE");
+        }
+        if self.run_as_steam_compat_tool {
+            cmd.env("XL_SCT", "1"); // Needed to trigger compatibility tool mode in XIVLauncher. Otherwise XL_PRELOAD will be ignored.
+        }
+        cmd.env("XL_PRELOAD", env::var("LD_PRELOAD").unwrap_or_default()) // Write XL_PRELOAD so it can maybe be passed to the game later.
+            .env_remove("LD_PRELOAD") // Completely remove LD_PRELOAD otherwise steam overlay will break the launcher text.
+            .spawn()?
+            .wait()
+            .await?;
+        Ok(())
+    }
+}
+
+/// Create/Overwrite an XLCore installation.
+pub async fn install_or_update_xlcore<F: Fn(&'static str)>(
+    release: ReleaseAssetInfo,
+    aria_source: AriaSource,
+    install_location: &PathBuf,
+    is_update: bool,
+    progress_msg_cb: F,
+) -> anyhow::Result<()> {
+    // Download and create archive readers for required files.
+    let mut xlcore_archive = {
+        match is_update {
+            true => {
+                info!(
+                    "Downloading XIVLauncher release from {}",
+                    release.download_url
+                );
+                progress_msg_cb("Downloading XIVLauncher");
+            }
+            false => {
+                info!("Updating XIVLauncher release from {}", release.download_url);
+                progress_msg_cb("Updating XIVLauncher");
+            }
+        }
+
+        let response = reqwest::get(release.download_url).await?;
+        let bytes = response.bytes().await?;
+        Archive::new(GzDecoder::new(bytes.reader()))
+    };
+    let mut aria_archive = {
+        match aria_source {
+            AriaSource::Embedded => {
+                info!("Using embedded aria2c tarball");
+                Archive::new(GzDecoder::new(
+                    Bytes::from_static(EMBEDDED_ARIA2C_TARBALL).reader(),
+                ))
+            }
+            AriaSource::Url(url) => {
+                info!("Downloading remote aria2c tarball from {url}");
+                progress_msg_cb("Downloading aria2c");
+                let response: reqwest::Response = reqwest::get(url).await?;
+                Archive::new(GzDecoder::new(response.bytes().await?.reader()))
+            }
+            AriaSource::File(path) => {
+                info!("Using local aria2c tarball at path: {path:?}");
+                Archive::new(GzDecoder::new(Bytes::from(fs::read(path)?).reader()))
+            }
+        }
+    };
+
+    // Cleanup old install.
+    let _ = fs::remove_dir_all(install_location);
+    fs::create_dir_all(install_location)?;
+
+    // Unpack XLCore
+    info!("Unpacking XIVLauncher tarball");
+    progress_msg_cb("Extracting XIVLauncher");
+    xlcore_archive.unpack(install_location)?;
+    info!("Successfully extracted and wrote XIVLauncher files");
+    drop(xlcore_archive);
+    info!("Ensuring XIVLauncher tarball contained compatiable files");
+    progress_msg_cb("Ensuring XIVLauncher compatibility");
+    if !fs::exists(install_location.join(XIVLAUNCHER_BIN_FILENAME))? {
+        bail!(
+            "aria2c tarball does not contain a file named '{}' and is incompatiable with XIVLauncher.",
+            XIVLAUNCHER_BIN_FILENAME
+        )
+    }
+
+    // Unpack Aria2c
+    info!("Unpacking aria2c tarball");
+    progress_msg_cb("Unpacking aria2c");
+    aria_archive.unpack(install_location)?;
+    drop(aria_archive);
+    info!("Ensuring aria2c tarball contained compatiable files");
+    progress_msg_cb("Ensuring aria2c compatibility");
+    if !fs::exists(install_location.join(ARIA2C_BIN_FILENAME))? {
+        bail!(
+            "aria2c tarball does not contain a file named '{}' and is incompatiable with XIVLauncher.",
+            ARIA2C_BIN_FILENAME
+        )
+    }
+    info!("Successfully extracted and wrote aria2c files");
+
+    // Complete installation by writing version information.
+    progress_msg_cb("Writing XIVLauncher version data");
+    let mut file = File::options()
+        .write(true)
+        .create(true)
+        .truncate(true)
+        .open(install_location.join(XIVLAUNCHER_VERSIONDATA_LOCAL_FILENAME))?;
+    file.write_all(release.version.as_bytes())?;
+    info!("Wrote versiondata with version {}", release.version);
+    progress_msg_cb("Finishing up");
+
+    Ok(())
+}
 
 #[derive(Default, Clone, Debug)]
-enum AriaSource {
+pub enum AriaSource {
     #[default]
     Embedded,
     Url(Url),
@@ -63,283 +324,72 @@ impl Display for AriaSource {
     }
 }
 
-/// Install or update XIVLauncher and then open it.
-#[derive(Debug, Clone, Parser)]
-pub struct LaunchCommand {
-    /// The name of the GitHub repository owner for XIVLauncher.
-    #[clap(default_value = "goatcorp", long = "xlcore-repo-owner")]
-    xlcore_repo_owner: String,
-
-    /// The name of the GitHub repository for XIVLauncher.
-    #[clap(default_value = "XIVLauncher.Core", long = "xlcore-repo-name")]
-    xlcore_repo_name: String,
-
-    /// The name of the release tar.gz archive that contains a self-contained XIVLauncher.
-    #[clap(
-        default_value = "XIVLauncher.Core.tar.gz",
-        long = "xlcore-release-asset"
-    )]
-    xlcore_release_asset: String,
-
-    /// The URL to a release of XIVLauncher.Core. This conflicts with `xlcore-repo-owner` and `xlcore-repo-name`
-    /// as it overrides the default git-based release system.
-    ///
-    /// This should be a URL prefix that contains:
-    ///
-    /// - A file called `version` that contains the version of the release.
-    ///
-    /// - A file with the name of `<xlcore-release-asset>` that contains the tar.gz archive of the release.
-    #[clap(
-        long = "xlcore-web-release-url-base",
-        conflicts_with = "xlcore_repo_name",
-        conflicts_with = "xlcore_repo_owner"
-    )]
-    xlcore_web_release_url_base: Option<Url>,
-
-    /// The source of the aria2c tarball containing a static compiled 'aria2c' binary.
-    /// By default an embedded tarball will be used requiring no downloads.
-    ///
-    /// The supported source types are `file:`, `url:` or `embedded`.
-    #[clap(long = "aria-source", default_value_t = AriaSource::Embedded)]
-    aria_source: AriaSource,
-
-    /// The location where the XIVLauncher should be installed.
-    #[clap(default_value = dirs::data_local_dir().unwrap().join("xlcore").into_os_string(), long = "install-directory")]
-    install_directory: PathBuf,
-
-    /// Use a fallback secrets provider with XIVLauncher instead of the system provided.
-    /// Used when no system secrets provider is available and credentials should still be saved.
-    #[clap(long = "use-fallback-secret-provider")]
-    use_fallback_secret_provider: bool,
-
-    /// Run the launcher in Steam compatibility tool mode.
-    ///
-    /// This should be disabled if launching standalone not from a Steam compatibility tool.
-    #[clap(default_value_t = true, long = "run-as-steam-compat-tool")]
-    run_as_steam_compat_tool: primitive::bool,
-
-    /// Skip checking for XIVLauncher updates. This will not prevent XIVLauncher from installing if it isn't installed.
-    #[clap(long = "skip-update")]
-    skip_update: bool,
+pub struct ReleaseAssetInfo {
+    pub download_url: Url,
+    pub version: String,
 }
 
-impl LaunchCommand {
-    pub async fn run(self) -> anyhow::Result<()> {
-        debug!("Attempting launch with args: {self:?}");
+impl ReleaseAssetInfo {
+    /// Obtain [`ReleaseAssetInfo`] from the GitHub API.
+    pub async fn from_github(
+        repo_owner: &String,
+        repo_name: &String,
+        release_asset: &String,
+    ) -> Result<Self> {
+        let release = {
+            match octocrab::instance()
+                .repos(repo_owner, repo_name)
+                .releases()
+                .get_latest()
+                .await
+            {
+                Ok(release) => release,
+                Err(err) => {
+                    bail!(
+                        "Failed to obtain release information for {}/{}: {:?}",
+                        repo_owner,
+                        repo_name,
+                        err.source()
+                    );
+                }
+            }
+        };
 
-        // Query the GitHub API or web release Url for release information.
-        let (remote_version, remote_release_url) = match self.xlcore_web_release_url_base {
-            Some(url) => Self::get_release_web(url, &self.xlcore_release_asset).await?,
+        match release
+            .assets
+            .into_iter()
+            .find(|asset| &asset.name == release_asset)
+        {
+            Some(asset) => Ok(Self {
+                download_url: asset.browser_download_url,
+                version: release.tag_name,
+            }),
             None => {
-                Self::get_release_github(
-                    &self.xlcore_repo_owner,
-                    &self.xlcore_repo_name,
-                    &self.xlcore_release_asset,
-                )
-                .await?
-            }
-        };
-
-        // Install XIVLauncher or do an update check if version data already exists locally.
-        match fs::read_to_string(
-            self.install_directory
-                .join(XIVLAUNCHER_VERSIONDATA_LOCAL_FILENAME),
-        ) {
-            Ok(ver) => {
-                if !self.skip_update {
-                    if ver == remote_version {
-                        info!(
-                            "XIVLauncher is up to date! (local: {ver} == remote: {remote_version})"
-                        );
-                    } else {
-                        let mut launch_ui = LaunchUI::new();
-                        info!(
-                            "XIVLauncher is out of date (local {ver} != remote: {remote_version}) - starting update"
-                        );
-                        Self::install_or_update_xlcore(
-                            &remote_version,
-                            remote_release_url,
-                            self.aria_source,
-                            &self.install_directory,
-                            &mut launch_ui,
-                        )
-                        .await?;
-                        info!("Successfully updated XIVLauncher to the latest version.")
-                    }
-                } else {
-                    info!("Skip update enabled, not attempting to update XIVLauncher.")
-                }
-            }
-            Err(err) => {
-                if err.kind() == ErrorKind::NotFound {
-                    let mut launch_ui = LaunchUI::new();
-                    info!(
-                        "Unable to obtain local version data for XIVLauncher - installing latest release"
-                    );
-                    Self::install_or_update_xlcore(
-                        &remote_version,
-                        remote_release_url,
-                        self.aria_source,
-                        &self.install_directory,
-                        &mut launch_ui,
-                    )
-                    .await?;
-                    info!("Successfully installed XIVLauncher")
-                } else {
-                    error!(
-                        "Something went wrong whilst checking for XIVLauncher: {:?}",
-                        err
-                    );
-                }
-            }
-        };
-
-        info!("Starting XIVLauncher");
-
-        let mut cmd = Command::new(self.install_directory.join(XIVLAUNCHER_BIN_FILENAME));
-        if self.use_fallback_secret_provider {
-            cmd.env("XL_SECRET_PROVIDER", "FILE");
-        }
-        if self.run_as_steam_compat_tool {
-            cmd.env("XL_SCT", "1"); // Needed to trigger compatibility tool mode in XIVLauncher. Otherwise XL_PRELOAD will be ignored.
-        }
-        let cmd = cmd
-            .env("XL_PRELOAD", env::var("LD_PRELOAD").unwrap_or_default()) // Write XL_PRELOAD so it can maybe be passed to the game later.
-            .env_remove("LD_PRELOAD") // Completely remove LD_PRELOAD otherwise steam overlay will break the launcher text.
-            .spawn()?
-            .wait()
-            .await?;
-
-        info!("XIVLauncher process exited with exit code {:?}", cmd.code());
-
-        Ok(())
-    }
-
-    async fn get_release_github(
-        xlcore_repo_owner: &String,
-        xlcore_repo_name: &String,
-        xlcore_release_asset: &String,
-    ) -> Result<(String, Url)> {
-        let octocrab = octocrab::instance();
-        let repo = octocrab.repos(xlcore_repo_owner, xlcore_repo_name);
-        let release = match repo.releases().get_latest().await {
-            Ok(release) => release,
-            Err(err) => {
                 bail!(
-                    "Failed to obtain release information for {}/{}: {:?}",
-                    xlcore_repo_owner,
-                    xlcore_repo_name,
-                    err.source()
+                    "Failed to find asset {} in release {}",
+                    release_asset,
+                    release.tag_name
                 );
             }
-        };
-
-        let release_url = release
-            .assets
-            .iter()
-            .find(|asset| &asset.name == xlcore_release_asset);
-
-        if let Some(asset) = release_url {
-            Ok((release.tag_name, asset.browser_download_url.clone()))
-        } else {
-            bail!(
-                "Failed to find asset {} in release {}",
-                xlcore_release_asset,
-                release.tag_name
-            );
         }
     }
 
-    async fn get_release_web(base_url: Url, xlcore_release_asset: &str) -> Result<(String, Url)> {
-        let version_url = base_url.join(XIVLAUNCHER_VERSION_REMOTE_FILENAME)?;
-        let release_url = base_url.join(xlcore_release_asset)?;
+    /// Obtain [`ReleaseAssetInfo`] from a web URL.
+    pub async fn from_url(base_url: Url, release_asset: &str, version_asset: &str) -> Result<Self> {
+        let (release_url, version_url) =
+            (base_url.join(release_asset)?, base_url.join(version_asset)?);
 
-        info!("XIVLauncher web release asset url:{}", release_url);
-        info!("XIVLauncher web release version url: {}", version_url);
+        debug!("release asset url:{}", release_url);
+        debug!("release version url: {}", version_url);
 
         let response = reqwest::get(version_url).await?;
         if !response.status().is_success() {
-            bail!("{}", format!("{:?}", response.error_for_status()))
-        }
-        Ok((response.text().await?, release_url))
-    }
-
-    /// Creates a new XLCore installation or overwrites an existing XLCore installion with a new one.
-    async fn install_or_update_xlcore(
-        release_version: &String,
-        release_url: Url,
-        aria_source: AriaSource,
-        install_location: &PathBuf,
-        launch_ui: &mut LaunchUI,
-    ) -> anyhow::Result<()> {
-        // Download/extract XLCore.
-        {
-            info!("Downloading XIVLauncher release from {release_url}");
-            launch_ui.set_progress_text("Downloading XIVLauncher");
-            let response = reqwest::get(release_url).await?;
-            let bytes = response.bytes().await?;
-            let mut archive = Archive::new(GzDecoder::new(bytes.reader()));
-            let _ = fs::remove_dir_all(install_location);
-            fs::create_dir_all(install_location)?;
-            info!("Unpacking XIVLauncher release tarball");
-            launch_ui.set_progress_text("Extracting XIVLauncher");
-            archive.unpack(install_location)?;
-            info!("Wrote XIVLauncher files");
+            bail!("{}", format!("{:?}", response.status().canonical_reason()))
         }
 
-        // Download/extract aria2c.
-        {
-            let aria_archive_bytes = match aria_source {
-                AriaSource::Embedded => {
-                    info!("Using embedded aria2c tarball");
-                    Bytes::from_static(ARIA2C_TARBALL_CONTENT)
-                }
-                AriaSource::Url(url) => {
-                    info!("Downloading remote aria2c tarball from {url}");
-                    launch_ui.set_progress_text("Downloading aria2c");
-                    let response: reqwest::Response = reqwest::get(url).await?;
-                    response.bytes().await?
-                }
-                AriaSource::File(path) => {
-                    info!("Using local aria2c tarball at path: {path:?}");
-                    Bytes::from(fs::read(path)?)
-                }
-            };
-
-            let mut archive = Archive::new(GzDecoder::new(aria_archive_bytes.reader()));
-
-            info!("Unpacking aria2c tarball");
-            launch_ui.set_progress_text("Unpacking aria2c");
-            archive.unpack(install_location)?;
-
-            info!("Ensuring aria2c tarball contained correct binary");
-            launch_ui.set_progress_text("Ensuring aria2c compatibility");
-            if !fs::exists(install_location.join("aria2c"))? {
-                error!(
-                    "aria2c tarball does not contain a binary named 'aria2c' and is unusable with XIVLauncher."
-                );
-                bail!(
-                    "aria2c tarball does not contain a binary named 'aria2c' and is unusable with XIVLauncher."
-                )
-            }
-
-            info!("Wrote aria2c binary");
-        }
-
-        // Write local version info for release.
-        {
-            launch_ui.set_progress_text("Writing XIVLauncher version data");
-            let mut file = File::options()
-                .write(true)
-                .create(true)
-                .truncate(true)
-                .append(false)
-                .open(install_location.join(XIVLAUNCHER_VERSIONDATA_LOCAL_FILENAME))?;
-            file.write_all(release_version.as_bytes())?;
-            info!("Wrote versiondata with version {}", release_version);
-        }
-        launch_ui.set_progress_text("Finishing up");
-
-        Ok(())
+        Ok(Self {
+            download_url: release_url,
+            version: response.text().await?,
+        })
     }
 }

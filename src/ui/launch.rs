@@ -8,11 +8,14 @@ use std::{
 
 pub struct LaunchUI {
     child: std::process::Child,
-    _stdin_thread: Option<std::thread::JoinHandle<()>>,
     tx: mpsc::Sender<String>,
+    _stdin_thread: Option<std::thread::JoinHandle<()>>,
 }
 
 impl LaunchUI {
+    /// Creates a new instance of [`LaunchUI`] and immediately displays it to the user.
+    ///
+    /// This method will run a new instance of the current executable to display the UI.
     pub fn new() -> Self {
         let (tx, rx) = mpsc::channel();
 
