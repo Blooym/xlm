@@ -250,7 +250,7 @@ pub async fn install_or_update_xlcore<F: Fn(&'static str)>(
     progress_msg_cb("Ensuring XIVLauncher compatibility");
     if !fs::exists(install_location.join(XIVLAUNCHER_BIN_FILENAME))? {
         bail!(
-            "aria2c tarball does not contain a file named '{}' and is incompatiable with XIVLauncher.",
+            "XIVLauncher tarball does not contain a file named '{}' and is incompatiable with XIVLauncher.",
             XIVLAUNCHER_BIN_FILENAME
         )
     }
