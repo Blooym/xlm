@@ -97,7 +97,6 @@ impl InstallSteamToolCommand {
         extra_env_vars: Option<String>,
     ) -> Result<()> {
         debug!("Writing script");
-        // Write the launcher script and ensure it's executable.
         let mut file = File::options()
             .write(true)
             .create(true)

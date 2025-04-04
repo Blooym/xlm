@@ -56,20 +56,20 @@ pub struct LaunchCommand {
     )]
     xlcore_web_release_url_base: Option<Url>,
 
-    /// Source of an aria2c tarball containing a statically compiled `aria2c`` binary.
+    /// Source of an aria2c tarball containing a statically compiled `aria2c` binary.
     /// By default an embedded tarball will be used.
     ///
-    /// The supported source types are `file:`, `url:` or `embedded`.
+    /// The supported source types are `file:path`, `url:url` or `embedded`.
     #[clap(long = "aria-source", default_value_t = AriaSource::Embedded)]
     aria_source: AriaSource,
 
-    /// The location where XIVLauncher should be installed.
+    /// The path to where XIVLauncher should be installed.
     #[clap(default_value = dirs::data_local_dir().unwrap().join("xlcore").into_os_string(), long = "install-directory")]
     install_directory: PathBuf,
 
     /// Use XIVLauncher's fallback secrets provider instead of the system's `libsecret` provider.
     ///
-    /// This should be used when no compatiable system secrets provider is available where
+    /// This should be used when no compatible system secrets provider is available where
     /// credential saving is still desirable.
     #[clap(long = "use-fallback-secret-provider")]
     use_fallback_secret_provider: bool,
@@ -82,7 +82,7 @@ pub struct LaunchCommand {
 
     /// Skip checking for & installing new XIVLauncher versions.
     ///
-    /// Note: this will not prevent XIVLauncher from installing if it does not exist at all.
+    /// Note: this will not prevent XIVLauncher from installing when not present.
     #[clap(long = "skip-update")]
     skip_update: bool,
 }
@@ -139,10 +139,13 @@ impl LaunchCommand {
                             self.aria_source,
                             &self.install_directory,
                             true,
-                            |txt| launch_ui.set_progress_text(txt),
+                            |txt| {
+                                debug!("setting progress text to '{txt}'");
+                                launch_ui.set_progress_text(txt);
+                            },
                         )
                         .await?;
-                        info!("Successfully updated XIVLauncher to the latest version.")
+                        info!("Successfully updated XIVLauncher to the latest version")
                     }
                 }
                 Err(err) => {
@@ -156,10 +159,13 @@ impl LaunchCommand {
                             self.aria_source,
                             &self.install_directory,
                             false,
-                            |txt| launch_ui.set_progress_text(txt),
+                            |txt| {
+                                debug!("setting progress text to '{txt}'");
+                                launch_ui.set_progress_text(txt);
+                            },
                         )
                         .await?;
-                        info!("Successfully installed XIVLauncher")
+                        info!("Successfully installed XIVLauncher");
                     } else {
                         error!(
                             "Something went wrong whilst checking for XIVLauncher: {:?}",
@@ -188,7 +194,7 @@ impl LaunchCommand {
 }
 
 /// Create/Overwrite an XLCore installation.
-pub async fn install_or_update_xlcore<F: Fn(&'static str)>(
+pub async fn install_or_update_xlcore<F: Fn(&str)>(
     release: ReleaseAssetInfo,
     aria_source: AriaSource,
     install_location: &PathBuf,
@@ -199,15 +205,12 @@ pub async fn install_or_update_xlcore<F: Fn(&'static str)>(
     let mut xlcore_archive = {
         match is_update {
             true => {
-                info!(
-                    "Downloading XIVLauncher release from {}",
-                    release.download_url
-                );
-                progress_msg_cb("Downloading XIVLauncher");
+                info!("Downloading XIVLauncher from {}", release.download_url);
+                progress_msg_cb(&format!("Downloading XIVLauncher (v{})", release.version));
             }
             false => {
-                info!("Updating XIVLauncher release from {}", release.download_url);
-                progress_msg_cb("Updating XIVLauncher");
+                info!("Updating XIVLauncher from {}", release.download_url);
+                progress_msg_cb(&format!("Updating XIVLauncher (v{})", release.version));
             }
         }
 
@@ -244,41 +247,41 @@ pub async fn install_or_update_xlcore<F: Fn(&'static str)>(
     info!("Unpacking XIVLauncher tarball");
     progress_msg_cb("Extracting XIVLauncher");
     xlcore_archive.unpack(install_location)?;
-    info!("Successfully extracted and wrote XIVLauncher files");
     drop(xlcore_archive);
-    info!("Ensuring XIVLauncher tarball contained compatiable files");
-    progress_msg_cb("Ensuring XIVLauncher compatibility");
+    info!("Ensuring XIVLauncher tarball contained compatible files");
+    progress_msg_cb("Validating XIVLauncher files");
     if !fs::exists(install_location.join(XIVLAUNCHER_BIN_FILENAME))? {
         bail!(
-            "XIVLauncher tarball does not contain a file named '{}' and is incompatiable with XIVLauncher.",
+            "XIVLauncher tarball does not contain a file named '{}' and is incompatible with XLM.",
             XIVLAUNCHER_BIN_FILENAME
         )
     }
+    info!("Successfully extracted and wrote XIVLauncher files");
 
     // Unpack Aria2c
     info!("Unpacking aria2c tarball");
     progress_msg_cb("Unpacking aria2c");
     aria_archive.unpack(install_location)?;
     drop(aria_archive);
-    info!("Ensuring aria2c tarball contained compatiable files");
-    progress_msg_cb("Ensuring aria2c compatibility");
+    info!("Ensuring aria2c tarball contained compatible files");
+    progress_msg_cb("Validating aria2c files");
     if !fs::exists(install_location.join(ARIA2C_BIN_FILENAME))? {
         bail!(
-            "aria2c tarball does not contain a file named '{}' and is incompatiable with XIVLauncher.",
+            "aria2c tarball does not contain a file named '{}' and is incompatible with XLM.",
             ARIA2C_BIN_FILENAME
         )
     }
     info!("Successfully extracted and wrote aria2c files");
 
     // Complete installation by writing version information.
-    progress_msg_cb("Writing XIVLauncher version data");
+    progress_msg_cb("Writing version data");
     let mut file = File::options()
         .write(true)
         .create(true)
         .truncate(true)
         .open(install_location.join(XIVLAUNCHER_VERSIONDATA_LOCAL_FILENAME))?;
     file.write_all(release.version.as_bytes())?;
-    info!("Wrote versiondata with version {}", release.version);
+    info!("Wrote version data (version {})", release.version);
     progress_msg_cb("Finishing up");
 
     Ok(())
