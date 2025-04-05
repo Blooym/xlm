@@ -1,4 +1,4 @@
-use crate::{includes::EMBEDDED_ARIA2C_TARBALL, ui::LaunchUI};
+use crate::ui::LaunchUI;
 use anyhow::{Context, Result, bail};
 use bytes::{Buf, Bytes};
 use clap::Parser;
@@ -22,6 +22,7 @@ const XIVLAUNCHER_BIN_FILENAME: &str = "XIVLauncher.Core";
 const XIVLAUNCHER_VERSION_REMOTE_FILENAME: &str = "version";
 const XIVLAUNCHER_VERSIONDATA_LOCAL_FILENAME: &str = "versiondata";
 const ARIA2C_BIN_FILENAME: &str = "aria2c";
+const EMBEDDED_ARIA2C_TARBALL: &[u8] = include_bytes!("../../static/aria2c-static.tar.gz");
 
 /// Install or update XIVLauncher and then open it.
 #[derive(Debug, Clone, Parser)]

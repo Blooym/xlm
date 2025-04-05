@@ -1,8 +1,3 @@
-use crate::includes::{
-    COMPATIBILITYTOOL_VDF_CONTENT, COMPATIBILITYTOOL_VDF_FILENAME, TOOLMANIFEST_VDF_CONTENT,
-    TOOLMANIFEST_VDF_FILENAME, XLM_BINARY_FILENAME, XLM_COMPATDIR_DIRNAME,
-    XLM_LAUNCHSCRIPT_FILENAME, get_launch_script,
-};
 use anyhow::{Context, Result, bail};
 use clap::Parser;
 use log::{debug, info};
@@ -12,6 +7,14 @@ use std::{
     os::unix::fs::OpenOptionsExt,
     path::{Path, PathBuf},
 };
+
+const TOOLMANIFEST_VDF_CONTENT: &[u8] = include_bytes!("../../static/toolmanifest.vdf");
+const COMPATIBILITYTOOL_VDF_CONTENT: &[u8] = include_bytes!("../../static/compatibilitytool.vdf");
+const XLM_COMPATDIR_DIRNAME: &str = "XLM";
+const XLM_BINARY_FILENAME: &str = "xlm";
+const XLM_LAUNCHSCRIPT_FILENAME: &str = "xlm.sh";
+const TOOLMANIFEST_VDF_FILENAME: &str = "toolmanifest.vdf";
+const COMPATIBILITYTOOL_VDF_FILENAME: &str = "compatibilitytool.vdf";
 
 /// Install the XLM Steam compatibility tool to the chosen path.
 #[derive(Debug, Clone, Parser)]
@@ -106,4 +109,46 @@ impl InstallSteamToolCommand {
         file.write_all(get_launch_script(extra_env_vars, extra_launch_args).as_bytes())?;
         Ok(())
     }
+}
+
+/// Get the xlm.sh launch script as a pre-formatted string.
+pub fn get_launch_script(
+    extra_env_vars: Option<String>,
+    extra_launch_args: Option<String>,
+) -> String {
+    format!(
+        r#"#!/bin/env bash
+
+# Prevents launching twice.
+if [[ "$1" == "run" ]]; then sleep 1; exit; fi
+
+tooldir="$(realpath "$(dirname "$0")")"
+
+# XLM pre-launch scripts.
+if [ -d $tooldir/prelaunch.d ]; then
+    for extension in $tooldir/prelaunch.d/*; do
+        if [ -f "$extension" ]; then
+            echo "Running XLM prelaunch $extension"
+            . "$extension"
+        fi
+    done
+fi
+unset extension
+
+PATH=$PATH:$tooldir/xlcore XL_SCT=1 {} $tooldir/xlm launch {} --install-directory $tooldir/xlcore $4
+
+# XLM post-launch scripts.
+if [ -d $tooldir/postlaunch.d ]; then
+    for extension in $tooldir/postlaunch.d/*; do
+        if [ -f "$extension" ]; then
+            echo "Running XLM postlaunch $extension"
+            . "$extension"
+        fi
+    done
+fi
+unset extension
+"#,
+        extra_env_vars.unwrap_or_default(),
+        extra_launch_args.unwrap_or_default()
+    )
 }

@@ -2,7 +2,6 @@
 compile_error!("XLM only supports Linux x86_64");
 
 mod commands;
-mod includes;
 mod ui;
 
 use anyhow::Result;
