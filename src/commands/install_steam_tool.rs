@@ -132,7 +132,7 @@ if [ -d $tooldir/prelaunch.d ]; then
 fi
 unset extension
 
-PATH=$PATH:$tooldir/xlcore XL_SCT=1 {} $tooldir/xlm launch {} --install-directory $tooldir/xlcore $4
+PATH=$PATH:$tooldir/xlcore {} $tooldir/xlm launch {} --install-directory $tooldir/xlcore $4
 
 # XLM post-launch scripts.
 if [ -d $tooldir/postlaunch.d ]; then
