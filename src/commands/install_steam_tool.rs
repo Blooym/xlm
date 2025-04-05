@@ -106,16 +106,13 @@ impl InstallSteamToolCommand {
             .truncate(true)
             .mode(0o755)
             .open(dir.join(XLM_LAUNCHSCRIPT_FILENAME))?;
-        file.write_all(get_launch_script(extra_env_vars, extra_launch_args).as_bytes())?;
+        file.write_all(launch_script_with(extra_env_vars, extra_launch_args).as_bytes())?;
         Ok(())
     }
 }
 
 /// Get the xlm.sh launch script as a pre-formatted string.
-pub fn get_launch_script(
-    extra_env_vars: Option<String>,
-    extra_launch_args: Option<String>,
-) -> String {
+fn launch_script_with(extra_env_vars: Option<String>, extra_launch_args: Option<String>) -> String {
     format!(
         r#"#!/bin/env bash
 

@@ -195,7 +195,7 @@ impl LaunchCommand {
 }
 
 /// Create/Overwrite an XLCore installation.
-pub async fn install_or_update_xlcore<F: Fn(&str)>(
+async fn install_or_update_xlcore<F: Fn(&str)>(
     release: ReleaseAssetInfo,
     aria_source: AriaSource,
     install_location: &PathBuf,
@@ -289,7 +289,7 @@ pub async fn install_or_update_xlcore<F: Fn(&str)>(
 }
 
 #[derive(Default, Clone, Debug)]
-pub enum AriaSource {
+enum AriaSource {
     #[default]
     Embedded,
     Url(Url),
@@ -329,7 +329,7 @@ impl Display for AriaSource {
     }
 }
 
-pub struct ReleaseAssetInfo {
+struct ReleaseAssetInfo {
     pub download_url: Url,
     pub version: String,
 }
