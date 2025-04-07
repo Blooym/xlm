@@ -207,11 +207,11 @@ async fn install_or_update_xlcore<F: Fn(&str)>(
         match is_update {
             true => {
                 info!("Downloading XIVLauncher from {}", release.download_url);
-                progress_msg_cb(&format!("Downloading XIVLauncher (v{})", release.version));
+                progress_msg_cb(&format!("Downloading XIVLauncher ({})", release.version));
             }
             false => {
                 info!("Updating XIVLauncher from {}", release.download_url);
-                progress_msg_cb(&format!("Updating XIVLauncher (v{})", release.version));
+                progress_msg_cb(&format!("Updating XIVLauncher ({})", release.version));
             }
         }
 
@@ -394,7 +394,7 @@ impl ReleaseAssetInfo {
 
         Ok(Self {
             download_url: release_url,
-            version: response.text().await?,
+            version: response.text().await?.trim().to_string(),
         })
     }
 }
