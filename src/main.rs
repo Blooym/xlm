@@ -72,35 +72,31 @@ async fn main() -> Result<()> {
     // Ensure the binary is up to date from GitHub releases.
     #[cfg(all(not(debug_assertions), feature = "self_update"))]
     if !args.xlm_updater_disable {
-        tokio::task::spawn_blocking(move || {
-            use log::info;
-            debug!("Running XLM self-updater");
-
-            match self_update::backends::github::Update::configure()
-                .repo_owner(&args.xlm_updater_repo_owner)
-                .repo_name(&args.xlm_updater_repo_name)
-                .bin_name(env!("CARGO_PKG_NAME"))
-                .no_confirm(true)
-                .show_output(false)
-                .current_version(env!("CARGO_PKG_VERSION"))
-                .build()
-                .unwrap()
-                .update()
-            {
-                Ok(status) => {
-                    if status.updated() {
-                        info!(
-                            "XLM has been automatically updated to version {}",
-                            status.version()
-                        )
-                    }
+        use log::info;
+        debug!("Running XLM self-updater");
+        match self_update::backends::github::Update::configure()
+            .repo_owner(&args.xlm_updater_repo_owner)
+            .repo_name(&args.xlm_updater_repo_name)
+            .bin_name(env!("CARGO_PKG_NAME"))
+            .no_confirm(true)
+            .show_output(false)
+            .current_version(env!("CARGO_PKG_VERSION"))
+            .build()
+            .unwrap()
+            .update()
+        {
+            Ok(status) => {
+                if status.updated() {
+                    info!(
+                        "XLM has been automatically updated to version {}",
+                        status.version()
+                    )
                 }
-                Err(err) => {
-                    eprintln!("XLM failed to auto-update: {:?}", err);
-                }
-            };
-        })
-        .await?;
+            }
+            Err(err) => {
+                eprintln!("XLM failed to auto-update: {:?}", err);
+            }
+        };
     }
 
     // Run the command.
