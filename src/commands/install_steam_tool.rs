@@ -114,7 +114,7 @@ impl InstallSteamToolCommand {
 /// Get the xlm.sh launch script as a pre-formatted string.
 fn launch_script_with(extra_env_vars: Option<String>, extra_launch_args: Option<String>) -> String {
     format!(
-        r#"#!/bin/env bash
+        r#"#!/usr/bin/env bash
 
 # Prevents launching twice.
 if [[ "$1" == "run" ]]; then sleep 1; exit; fi
