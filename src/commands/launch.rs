@@ -389,7 +389,10 @@ impl ReleaseAssetInfo {
 
         let response = reqwest::get(version_url).await?;
         if !response.status().is_success() {
-            bail!("{}", format!("{:?}", response.status().canonical_reason()))
+            bail!(
+                "Did not receieve version information: {}",
+                response.status(),
+            );
         }
 
         Ok(Self {
