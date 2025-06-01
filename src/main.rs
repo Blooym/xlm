@@ -49,7 +49,7 @@ struct Arguments {
     xlm_updater_disable: bool,
 }
 
-#[tokio::main]
+#[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<()> {
     let args = Arguments::parse();
 
