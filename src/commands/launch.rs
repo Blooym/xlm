@@ -179,17 +179,24 @@ impl LaunchCommand {
 
         info!("Starting XIVLauncher");
         let mut cmd = Command::new(self.install_directory.join(XIVLAUNCHER_BIN_FILENAME));
+        // Use whatever secret's provider is the best fallback. Right now this is always FILE.
         if self.use_fallback_secret_provider {
             cmd.env("XL_SECRET_PROVIDER", "FILE");
         }
+        // Needed to trigger compatibility tool mode in XIVLauncher.
         if self.run_as_steam_compat_tool {
-            cmd.env("XL_SCT", "1"); // Needed to trigger compatibility tool mode in XIVLauncher. Otherwise XL_PRELOAD will be ignored.
+            cmd.env("XL_SCT", "1");
         }
-        cmd.env("XL_PRELOAD", env::var("LD_PRELOAD").unwrap_or_default()) // Write XL_PRELOAD so it can maybe be passed to the game later.
-            .env_remove("LD_PRELOAD") // Completely remove LD_PRELOAD otherwise steam overlay will break the launcher text.
-            .spawn()?
-            .wait()
-            .await?;
+        // Write LD_PRELOAD as XL_PRELOAD, the launcher will use it if needed to pass this through to the game.
+        if let Ok(ld_preload) = env::var("LD_PRELOAD") {
+            if !ld_preload.trim().is_empty() {
+                cmd.env("XL_PRELOAD", ld_preload);
+            }
+        }
+        // Always remove LD_PRELOAD as Steam overlay will break the launcher text.
+        cmd.env_remove("LD_PRELOAD");
+        cmd.spawn()?;
+
         Ok(())
     }
 }
