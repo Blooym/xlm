@@ -213,12 +213,12 @@ async fn install_or_update_xlcore<F: Fn(&str)>(
     let mut xlcore_archive = {
         match is_update {
             true => {
-                info!("Downloading XIVLauncher from {}", release.download_url);
-                progress_msg_cb(&format!("Downloading XIVLauncher ({})", release.version));
-            }
-            false => {
                 info!("Updating XIVLauncher from {}", release.download_url);
                 progress_msg_cb(&format!("Updating XIVLauncher ({})", release.version));
+            }
+            false => {
+                info!("Downloading XIVLauncher from {}", release.download_url);
+                progress_msg_cb(&format!("Downloading XIVLauncher ({})", release.version));
             }
         }
 
