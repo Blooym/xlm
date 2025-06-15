@@ -51,11 +51,12 @@ pub struct LaunchCommand {
     ///
     /// - A tar.gz archive with the name of `--xlcore-release-asset` that contains XIVLauncher files.
     #[clap(
-        long = "xlcore-web-release-url-base",
+        long = "xlcore-web-release-url",
+        alias = "xlcore-web-release-url-base",
         conflicts_with = "xlcore_repo_name",
         conflicts_with = "xlcore_repo_owner"
     )]
-    xlcore_web_release_url_base: Option<Url>,
+    xlcore_web_release_url: Option<Url>,
 
     /// Source of an aria2c tarball containing a statically compiled `aria2c` binary.
     /// By default an embedded tarball will be used.
@@ -93,7 +94,7 @@ impl LaunchCommand {
         info!("Attempting launch with: {self:?}");
 
         // Query the GitHub API or Web Release URL for release information.
-        let release = match self.xlcore_web_release_url_base {
+        let release = match self.xlcore_web_release_url {
             Some(url) => {
                 ReleaseAssetInfo::from_url(
                     url,
