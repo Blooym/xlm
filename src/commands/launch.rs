@@ -189,10 +189,10 @@ impl LaunchCommand {
             cmd.env("XL_SCT", "1");
         }
         // Write LD_PRELOAD as XL_PRELOAD, the launcher will use it if needed to pass this through to the game.
-        if let Ok(ld_preload) = env::var("LD_PRELOAD") {
-            if !ld_preload.trim().is_empty() {
-                cmd.env("XL_PRELOAD", ld_preload);
-            }
+        if let Ok(ld_preload) = env::var("LD_PRELOAD")
+            && !ld_preload.trim().is_empty()
+        {
+            cmd.env("XL_PRELOAD", ld_preload);
         }
         // Always remove LD_PRELOAD as Steam overlay will break the launcher text.
         cmd.env_remove("LD_PRELOAD");
