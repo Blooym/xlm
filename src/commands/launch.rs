@@ -169,10 +169,7 @@ impl LaunchCommand {
                         .await?;
                         info!("Successfully installed XIVLauncher");
                     } else {
-                        error!(
-                            "Something went wrong whilst checking for XIVLauncher: {:?}",
-                            err
-                        );
+                        error!("Something went wrong whilst checking for XIVLauncher: {err:?}",);
                     }
                 }
             };
@@ -392,8 +389,8 @@ impl ReleaseAssetInfo {
         let (release_url, version_url) =
             (base_url.join(release_asset)?, base_url.join(version_asset)?);
 
-        debug!("release asset url:{}", release_url);
-        debug!("release version url: {}", version_url);
+        debug!("release asset url: {release_url}");
+        debug!("release version url: {version_url}");
 
         let response = reqwest::get(version_url).await?;
         if !response.status().is_success() {
