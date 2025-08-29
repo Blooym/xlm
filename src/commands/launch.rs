@@ -142,8 +142,12 @@ impl LaunchCommand {
                             &self.install_directory,
                             true,
                             |txt| {
-                                debug!("setting progress text to '{txt}'");
-                                launch_ui.set_progress_text(txt);
+                                if let Some(ui) = launch_ui.as_ref() {
+                                    debug!("Setting progress text to '{txt}'");
+                                    ui.set_progress_text(txt)
+                                } else {
+                                    info!("Progress state: {txt}");
+                                }
                             },
                         )
                         .await?;
@@ -162,8 +166,12 @@ impl LaunchCommand {
                             &self.install_directory,
                             false,
                             |txt| {
-                                debug!("setting progress text to '{txt}'");
-                                launch_ui.set_progress_text(txt);
+                                if let Some(ui) = launch_ui.as_ref() {
+                                    debug!("Setting progress text to '{txt}'");
+                                    ui.set_progress_text(txt)
+                                } else {
+                                    info!("Progress state: {txt}");
+                                }
                             },
                         )
                         .await?;

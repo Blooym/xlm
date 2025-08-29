@@ -1,6 +1,7 @@
 use eframe::egui::{
     Align, CentralPanel, Direction, Layout, Spinner, TopBottomPanel, ViewportBuilder,
 };
+use log::warn;
 use std::{
     io::{self, BufRead, Write},
     sync::{Arc, RwLock, mpsc},
@@ -16,7 +17,17 @@ impl LaunchUI {
     /// Creates a new instance of [`LaunchUI`] and immediately displays it to the user.
     ///
     /// This method will run a new instance of the current executable to display the UI.
-    pub fn new() -> Self {
+    pub fn new() -> Option<Self> {
+        // Currently running the UI inside of snap breaks things,
+        // for now just don't show it as a workaround.
+        // https://github.com/Blooym/xlm/issues/19
+        if std::env::var("SNAP").is_ok() {
+            warn!(
+                "Running inside snap environment - UI functionality has been disabled due to incompatibility."
+            );
+            return None;
+        }
+
         let (tx, rx) = mpsc::channel();
 
         let mut child = std::process::Command::new(std::env::current_exe().unwrap());
@@ -34,11 +45,11 @@ impl LaunchUI {
             }
         });
 
-        Self {
+        Some(Self {
             child,
             _stdin_thread: Some(stdin_thread),
             tx,
-        }
+        })
     }
 
     pub fn set_progress_text(&self, text: &str) {
