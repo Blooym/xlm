@@ -73,6 +73,6 @@ This means that XIVLauncher was unable to find a secure way to store your passwo
 
 If you still run into this issue even with a secrets manager installed on your system, use the fallback file storage provider offered by XIVLauncher; You can tell XLM to ask XIVLauncher to enable this by adding `--use-fallback-secrets-provider` to Steam's "Launch Arguments" section. Please note that this has been done for you if you used the Steam Deck or Flatpak installation scripts. 
 
-### Prelaunch scripts (Advanced users)
+### Prelaunch/Postlaunch scripts (Advanced users)
 
 When installed as a Steam compatibility tool, XLM supports running scripts before XIVLauncher is started and after it has closed. When launched from Steam, XLM will look inside of the its compatibility tool directory for directories named `prelaunch.d` and `postlaunch.d` and will run all shell scripts contained within. These scripts have to be placed manually after installing XLM and are considered an experimental feature.
