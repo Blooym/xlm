@@ -30,18 +30,25 @@ impl LaunchUI {
 
         let (tx, rx) = mpsc::channel();
 
-        let mut child = std::process::Command::new(std::env::current_exe().unwrap());
+        let mut child = std::process::Command::new(
+            std::env::current_exe().expect("should be able to obtain path of current executable"),
+        );
         #[cfg(all(not(debug_assertions), feature = "self_update"))]
         child.arg("--xlm-updater-disable");
         child
             .arg("internal-launch-ui")
             .stdin(std::process::Stdio::piped());
-        let mut child = child.spawn().unwrap();
+        let mut child = child
+            .spawn()
+            .expect("should be able to spawn internal ui child process");
 
-        let mut stdin = child.stdin.take().unwrap();
+        let mut stdin = child
+            .stdin
+            .take()
+            .expect("should be able to connect to child stdin");
         let stdin_thread = std::thread::spawn(move || {
             for msg in rx.iter() {
-                writeln!(stdin, "{msg}").unwrap();
+                writeln!(stdin, "{msg}").expect("child stdin recv should be writeable");
             }
         });
 
@@ -53,13 +60,17 @@ impl LaunchUI {
     }
 
     pub fn set_progress_text(&self, text: &str) {
-        self.tx.send(text.to_string()).unwrap();
+        self.tx
+            .send(text.to_string())
+            .expect("should be able to pass progress text to ui recv");
     }
 }
 
 impl Drop for LaunchUI {
     fn drop(&mut self) {
-        self.child.kill().unwrap();
+        self.child
+            .kill()
+            .expect("should be able to end child process");
     }
 }
 
@@ -75,7 +86,9 @@ pub fn launch_ui_main() {
             loop {
                 line.clear();
                 if reader.read_line(&mut line).is_ok() {
-                    *progress_text.write().unwrap() = line.trim().to_string();
+                    *progress_text
+                        .write()
+                        .expect("should be able to set ui progress text") = line.trim().to_string();
                 }
             }
         }
@@ -97,7 +110,12 @@ pub fn launch_ui_main() {
             TopBottomPanel::bottom("bottom").show(ctx, |ui| {
                 ui.with_layout(Layout::left_to_right(Align::Min), |ui| {
                     ui.add(Spinner::default());
-                    ui.label(progress_text.read().unwrap().as_str());
+                    ui.label(
+                        progress_text
+                            .read()
+                            .expect("progress text lock should be readable")
+                            .as_str(),
+                    );
                     ui.with_layout(Layout::right_to_left(Align::Max), |ui| {
                         ui.horizontal(|ui| {
                             ui.label(format!("XLM v{}", env!("CARGO_PKG_VERSION")));

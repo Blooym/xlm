@@ -1,9 +1,9 @@
 use crate::ui::LaunchUI;
-use anyhow::{Context, Result, bail};
+use anyhow::{Context, Result, anyhow, bail};
 use bytes::{Buf, Bytes};
 use clap::Parser;
 use flate2::bufread::GzDecoder;
-use log::{debug, error, info};
+use log::{debug, error, info, warn};
 use reqwest::Url;
 use std::{
     env,
@@ -201,9 +201,20 @@ impl LaunchCommand {
         }
         // Always remove LD_PRELOAD as Steam overlay will break the launcher text.
         cmd.env_remove("LD_PRELOAD");
-        cmd.spawn()?;
 
-        Ok(())
+        let exit_status = cmd.spawn()?.wait().await?;
+        match exit_status.success() {
+            true => {
+                info!("XIVLauncher.Core exited cleanly: {exit_status}");
+                Ok(())
+            }
+            false => {
+                warn!("XIVLauncher did not exit with a successful status code: {exit_status}");
+                Err(anyhow!(
+                    "XIVLauncher did not exit with a successful status code: {exit_status}"
+                ))
+            }
+        }
     }
 }
 
@@ -310,24 +321,21 @@ enum AriaSource {
 }
 
 impl FromStr for AriaSource {
-    type Err = &'static str;
+    type Err = anyhow::Error;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "embedded" => Ok(Self::Embedded),
-            _ if s.starts_with("url:") => Ok(Self::Url(
-                Url::parse(&s.chars().skip(4).collect::<String>()).unwrap(),
-            )),
+            _ if s.starts_with("url:") => Ok(Self::Url(Url::parse(
+                &s.chars().skip(4).collect::<String>(),
+            )?)),
             _ if s.starts_with("file:") => {
                 let s = s.chars().skip(5).collect::<String>();
-                if !fs::exists(&s)
-                    .context("exists check operation failed")
-                    .unwrap()
-                {
-                    return Err("unable to find file at given path");
+                if !fs::exists(&s).context("exists check operation failed")? {
+                    return Err(anyhow!("unable to find file at given path"));
                 }
                 Ok(Self::File(PathBuf::from(s)))
             }
-            _ => Err("valid sources are 'embedded', 'url:' or 'file:'"),
+            _ => Err(anyhow!("valid sources are 'embedded', 'url:' or 'file:'")),
         }
     }
 }

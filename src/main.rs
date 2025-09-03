@@ -63,7 +63,7 @@ async fn main() -> Result<()> {
         WriteLogger::new(
             LevelFilter::Debug,
             Config::default(),
-            File::create(temp_dir().join(format!("{}.log", env!("CARGO_PKG_NAME")))).unwrap(),
+            File::create(temp_dir().join(format!("{}.log", env!("CARGO_PKG_NAME"))))?,
         ),
     ])?;
 
@@ -81,8 +81,7 @@ async fn main() -> Result<()> {
             .no_confirm(true)
             .show_output(false)
             .current_version(env!("CARGO_PKG_VERSION"))
-            .build()
-            .unwrap()
+            .build()?
             .update()
         {
             Ok(status) => {
