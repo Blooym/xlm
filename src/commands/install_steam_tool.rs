@@ -1,6 +1,6 @@
 use anyhow::{Context, Result, bail};
 use clap::Parser;
-use log::{debug, info};
+use log::info;
 use std::{
     fs::{self, File},
     io::Write,
@@ -75,7 +75,7 @@ impl InstallSteamToolCommand {
     }
 
     fn write_compatibilitytool_vdf(dir: &Path) -> Result<()> {
-        debug!("Writing compatibilitytool.vdf");
+        info!("Writing compatibilitytool.vdf");
         Ok(File::options()
             .write(true)
             .create(true)
@@ -85,7 +85,7 @@ impl InstallSteamToolCommand {
     }
 
     fn write_toolmanifest_vdf(dir: &Path) -> Result<()> {
-        debug!("Writing toolmanifest.vdf");
+        info!("Writing toolmanifest.vdf");
         Ok(File::options()
             .write(true)
             .create(true)
@@ -99,7 +99,7 @@ impl InstallSteamToolCommand {
         extra_launch_args: Option<String>,
         extra_env_vars: Option<String>,
     ) -> Result<()> {
-        debug!("Writing script");
+        info!("Writing script");
         let mut file = File::options()
             .write(true)
             .create(true)

@@ -7,7 +7,7 @@ mod ui;
 use anyhow::Result;
 use clap::Parser;
 use commands::{install_steam_tool::InstallSteamToolCommand, launch::LaunchCommand};
-use log::debug;
+use log::info;
 use simplelog::{
     ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger,
 };
@@ -67,13 +67,18 @@ async fn main() -> Result<()> {
         ),
     ])?;
 
-    debug!("XLM v{}", env!("CARGO_PKG_VERSION"));
+    // Remove this when multiple providers dont end up in deps.
+    rustls::crypto::aws_lc_rs::default_provider()
+        .install_default()
+        .expect("Failed to install default rustls crypto provider");
+
+    info!("XLM v{}", env!("CARGO_PKG_VERSION"));
 
     // Ensure the binary is up to date from GitHub releases.
     #[cfg(all(not(debug_assertions), feature = "self_update"))]
     if !args.xlm_updater_disable {
         use log::info;
-        debug!("Running XLM self-updater");
+        info!("Running XLM self-updater");
         match self_update::backends::github::Update::configure()
             .repo_owner(&args.xlm_updater_repo_owner)
             .repo_name(&args.xlm_updater_repo_name)
@@ -93,7 +98,8 @@ async fn main() -> Result<()> {
                 }
             }
             Err(err) => {
-                eprintln!("XLM failed to auto-update: {:?}", err);
+                use log::error;
+                error!("XLM failed to auto-update: {:?}", err);
             }
         };
     }

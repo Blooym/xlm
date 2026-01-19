@@ -423,8 +423,8 @@ impl ReleaseAssetInfo {
         let (release_url, version_url) =
             (base_url.join(release_asset)?, base_url.join(version_asset)?);
 
-        debug!("release asset url: {release_url}");
-        debug!("release version url: {version_url}");
+        info!("release asset url: {release_url}");
+        info!("release version url: {version_url}");
 
         let response = reqwest::get(version_url).await?;
         if !response.status().is_success() {
