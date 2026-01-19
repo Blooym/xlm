@@ -28,21 +28,30 @@ const EMBEDDED_ARIA2C_TARBALL: &[u8] = include_bytes!("../../static/aria2c-stati
 #[derive(Debug, Clone, Parser)]
 pub struct LaunchCommand {
     /// The name of the GitHub repository owner for XIVLauncher.
-    #[clap(default_value = "goatcorp", long = "xlcore-repo-owner")]
+    #[clap(
+        default_value = "goatcorp",
+        long = "xlcore-repo-owner",
+        env = "XLM_XLCORE_REPO_OWNER"
+    )]
     xlcore_repo_owner: String,
 
     /// The name of the GitHub repository for XIVLauncher.
-    #[clap(default_value = "XIVLauncher.Core", long = "xlcore-repo-name")]
+    #[clap(
+        default_value = "XIVLauncher.Core",
+        long = "xlcore-repo-name",
+        env = "XLM_XLCORE_REPO_NAME"
+    )]
     xlcore_repo_name: String,
 
     /// The name of the release tar.gz archive that contains a self-contained XIVLauncher.
     #[clap(
         default_value = "XIVLauncher.Core.tar.gz",
-        long = "xlcore-release-asset"
+        long = "xlcore-release-asset",
+        env = "XLM_XLCORE_RELEASE_ASSET"
     )]
     xlcore_release_asset: String,
 
-    /// The URL to a release of XIVLauncher.Core. This conflicts with `xlcore-repo-owner` and `xlcore-repo-name`
+    /// The URL to a release of XIVLauncher. This conflicts with `xlcore-repo-owner` and `xlcore-repo-name`
     /// as it overrides the default git-based release system.
     ///
     /// This should be a URL base that contains the following under it:
@@ -53,39 +62,47 @@ pub struct LaunchCommand {
     #[clap(
         long = "xlcore-web-release-url",
         alias = "xlcore-web-release-url-base",
+        env = "XLM_XLCORE_WEB_RELEASE_URL",
         conflicts_with = "xlcore_repo_name",
         conflicts_with = "xlcore_repo_owner"
     )]
     xlcore_web_release_url: Option<Url>,
 
+    /// The path to where XIVLauncher.Core should be installed.
+    #[clap(long = "install-directory", alias = "xlcore-install-directory", env = "XLM_INSTALL_DIRECTORY", default_value = dirs::data_local_dir().unwrap().join("xlcore").into_os_string())]
+    xlcore_install_directory: PathBuf,
+
     /// Source of an aria2c tarball containing a statically compiled `aria2c` binary.
     /// By default an embedded tarball will be used.
     ///
     /// The supported source types are `file:path`, `url:url` or `embedded`.
-    #[clap(long = "aria-source", default_value_t = AriaSource::Embedded)]
+    #[clap(long = "aria-source", env = "XLM_ARIA_SOURCE", default_value_t = AriaSource::Embedded)]
     aria_source: AriaSource,
-
-    /// The path to where XIVLauncher should be installed.
-    #[clap(default_value = dirs::data_local_dir().unwrap().join("xlcore").into_os_string(), long = "install-directory")]
-    install_directory: PathBuf,
 
     /// Use XIVLauncher's fallback secrets provider instead of the system's `libsecret` provider.
     ///
     /// This should be used when no compatible system secrets provider is available where
     /// credential saving is still desirable.
-    #[clap(long = "use-fallback-secret-provider")]
+    #[clap(
+        long = "use-fallback-secret-provider",
+        env = "XLM_USE_FALLBACK_SECRET_PROVIDER"
+    )]
     use_fallback_secret_provider: bool,
 
     /// Run the launcher in Steam compatibility tool mode.
     ///
     /// This should be disabled if launching standalone instead of from a Steam compatibility tool.
-    #[clap(default_value_t = true, long = "run-as-steam-compat-tool")]
+    #[clap(
+        long = "run-as-steam-compat-tool",
+        env = "XLM_RUN_AS_STEAM_COMPAT_TOOL",
+        default_value_t = true
+    )]
     run_as_steam_compat_tool: primitive::bool,
 
     /// Skip checking for & installing new XIVLauncher versions.
     ///
     /// Note: this will not prevent XIVLauncher from installing when not present.
-    #[clap(long = "skip-update")]
+    #[clap(long = "skip-update", env = "XLM_SKIP_UPDATE")]
     skip_update: bool,
 }
 
@@ -114,14 +131,15 @@ impl LaunchCommand {
         };
 
         // Conditionally run update check/install depending on flags and versions.
-        let xl_installed = fs::exists(self.install_directory.join(XIVLAUNCHER_BIN_FILENAME))?;
+        let xl_installed =
+            fs::exists(self.xlcore_install_directory.join(XIVLAUNCHER_BIN_FILENAME))?;
         if xl_installed && self.skip_update {
             info!(
                 "XIVLauncher already installed & version checks are disabled, skipping the update process"
             );
         } else {
             match fs::read_to_string(
-                self.install_directory
+                self.xlcore_install_directory
                     .join(XIVLAUNCHER_VERSIONDATA_LOCAL_FILENAME),
             ) {
                 Ok(local_ver) => {
@@ -139,7 +157,7 @@ impl LaunchCommand {
                         install_or_update_xlcore(
                             release,
                             self.aria_source,
-                            &self.install_directory,
+                            &self.xlcore_install_directory,
                             true,
                             |txt| {
                                 if let Some(ui) = launch_ui.as_ref() {
@@ -163,7 +181,7 @@ impl LaunchCommand {
                         install_or_update_xlcore(
                             release,
                             self.aria_source,
-                            &self.install_directory,
+                            &self.xlcore_install_directory,
                             false,
                             |txt| {
                                 if let Some(ui) = launch_ui.as_ref() {
@@ -184,7 +202,7 @@ impl LaunchCommand {
         }
 
         info!("Starting XIVLauncher");
-        let mut cmd = Command::new(self.install_directory.join(XIVLAUNCHER_BIN_FILENAME));
+        let mut cmd = Command::new(self.xlcore_install_directory.join(XIVLAUNCHER_BIN_FILENAME));
         // Use whatever secret's provider is the best fallback. Right now this is always FILE.
         if self.use_fallback_secret_provider {
             cmd.env("XL_SECRET_PROVIDER", "FILE");

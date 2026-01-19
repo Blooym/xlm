@@ -28,15 +28,15 @@ pub struct InstallSteamToolCommand {
     ///  - Flatpak: `~/.var/app/com.valvesoftware.Steam/.steam/root/compatibilitytools.d/`
     ///
     ///  - Snap: `~/snap/steam/common/.steam/root/compatibilitytools.d/`
-    #[clap(long = "steam-compat-path")]
+    #[clap(long = "steam-compat-path", env = "XLM_STEAM_COMPAT_PATH")]
     steam_compat_path: PathBuf,
 
     /// Additional flags to pass to the launch command when started from the compatibility tool.
-    #[clap(long = "extra-launch-args")]
+    #[clap(long = "extra-launch-args", env = "XLM_EXTRA_LAUNCH_ARGS")]
     extra_launch_args: Option<String>,
 
     /// Additional environment variables to pass to the launch command when started from the compatibility tool.
-    #[clap(long = "extra-env-vars")]
+    #[clap(long = "extra-env-vars", env = "XLM_EXTRA_ENV_VARS")]
     extra_env_vars: Option<String>,
 }
 
