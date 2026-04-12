@@ -1,12 +1,12 @@
 use anyhow::{Context, Result, bail};
 use clap::Parser;
-use log::info;
 use std::{
     fs::{self, File},
     io::Write,
     os::unix::fs::OpenOptionsExt,
     path::{Path, PathBuf},
 };
+use tracing::info;
 
 const TOOLMANIFEST_VDF_CONTENT: &[u8] = include_bytes!("../../static/toolmanifest.vdf");
 const COMPATIBILITYTOOL_VDF_CONTENT: &[u8] = include_bytes!("../../static/compatibilitytool.vdf");

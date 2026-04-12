@@ -1,4 +1,5 @@
 /target
 /tmp
+/.direnv
 flatpak-cargo-generator.py
 generated-sources.json

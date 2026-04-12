@@ -7,18 +7,14 @@ mod ui;
 use anyhow::Result;
 use clap::Parser;
 use commands::{install_steam_tool::InstallSteamToolCommand, launch::LaunchCommand};
-use log::info;
-use simplelog::{
-    ColorChoice, CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger,
-};
-use std::{env::temp_dir, fs::File};
+use std::{env::temp_dir, fs::File, io::BufWriter, str::FromStr, sync::Mutex};
+use tracing::info;
+use tracing_subscriber::{EnvFilter, Layer, fmt, layer::SubscriberExt, util::SubscriberInitExt};
 
 #[derive(Debug, Clone, Parser)]
 enum Command {
     Launch(Box<LaunchCommand>),
     InstallSteamTool(InstallSteamToolCommand),
-    #[clap(hide = true)]
-    InternalLaunchUI,
 }
 
 #[derive(Debug, Clone, Parser)]
@@ -27,47 +23,72 @@ struct Arguments {
     #[clap(subcommand)]
     command: Command,
 
+    /// A GitHub personal access token to use for any requests with the GitHub API.
+    ///
+    /// You should only need to set this if you are attempting to fetch from a private
+    /// repository or are experiencing issues with ratelimits.
+    #[clap(
+        global = true,
+        long = "github-auth-token",
+        env = "XLM_GITHUB_AUTH_TOKEN"
+    )]
+    github_auth_token: Option<String>,
+
     /// The name of the GitHub repository owner that XLM should attempt to self-update from.
     #[cfg(all(not(debug_assertions), feature = "self_update"))]
     #[clap(
         global = true,
         default_value = "Blooym",
-        long = "xlm-updater-repo-owner"
+        long = "xlm-updater-repo-owner",
+        env = "XLM_UPDATER_REPO_OWNER"
     )]
     xlm_updater_repo_owner: String,
 
     /// The name of the GitHub repository that XLM should attempt to self-update from.
     #[cfg(all(not(debug_assertions), feature = "self_update"))]
-    #[clap(global = true, default_value = "xlm", long = "xlm-updater-repo-name")]
+    #[clap(
+        global = true,
+        default_value = "xlm",
+        long = "xlm-updater-repo-name",
+        env = "XLM_UPDATER_REPO_NAME"
+    )]
     xlm_updater_repo_name: String,
 
     /// Disable XLM's inbuilt self-updater. May result in an outdated binary.
     ///
     /// This should only be disabled if your connection to GitHub is poor or ratelimited.
     #[cfg(all(not(debug_assertions), feature = "self_update"))]
-    #[clap(global = true, default_value_t = false, long = "xlm-updater-disable")]
+    #[clap(
+        global = true,
+        default_value_t = false,
+        long = "xlm-updater-disable",
+        env = "XLM_UPDATER_DISABLE"
+    )]
     xlm_updater_disable: bool,
 }
 
 #[tokio::main(flavor = "current_thread")]
 async fn main() -> Result<()> {
     let args = Arguments::parse();
-
-    CombinedLogger::init(vec![
-        TermLogger::new(
-            LevelFilter::Info,
-            Config::default(),
-            TerminalMode::Mixed,
-            ColorChoice::Auto,
-        ),
-        WriteLogger::new(
-            LevelFilter::Debug,
-            Config::default(),
-            File::create(temp_dir().join(format!("{}.log", env!("CARGO_PKG_NAME"))))?,
-        ),
-    ])?;
-
-    // Remove this when multiple providers dont end up in deps.
+    tracing_subscriber::registry()
+        .with(
+            fmt::layer()
+                .compact()
+                .with_target(false)
+                .with_writer(std::io::stdout)
+                .with_filter(
+                    EnvFilter::try_from_default_env().unwrap_or_else(|_| EnvFilter::new("info")),
+                ),
+        )
+        .with(
+            fmt::layer()
+                .with_ansi(false)
+                .with_writer(File::create(
+                    temp_dir().join(format!("{}.log", env!("CARGO_PKG_NAME"))),
+                )?)
+                .with_filter(EnvFilter::new("debug")),
+        )
+        .init();
     rustls::crypto::aws_lc_rs::default_provider()
         .install_default()
         .expect("Failed to install default rustls crypto provider");
@@ -77,18 +98,21 @@ async fn main() -> Result<()> {
     // Ensure the binary is up to date from GitHub releases.
     #[cfg(all(not(debug_assertions), feature = "self_update"))]
     if !args.xlm_updater_disable {
-        use log::info;
         info!("Running XLM self-updater");
-        match self_update::backends::github::Update::configure()
+        let mut updater = self_update::backends::github::Update::configure();
+        updater
             .repo_owner(&args.xlm_updater_repo_owner)
             .repo_name(&args.xlm_updater_repo_name)
             .bin_name(env!("CARGO_PKG_NAME"))
             .no_confirm(true)
             .show_output(false)
-            .current_version(env!("CARGO_PKG_VERSION"))
-            .build()?
-            .update()
-        {
+            .current_version(env!("CARGO_PKG_VERSION"));
+
+        if let Some(ref auth_token) = args.github_auth_token {
+            updater.auth_token(auth_token);
+        };
+
+        match updater.build()?.update() {
             Ok(status) => {
                 if status.updated() {
                     info!(
@@ -98,7 +122,7 @@ async fn main() -> Result<()> {
                 }
             }
             Err(err) => {
-                use log::error;
+                use tracing::error;
                 error!("XLM failed to auto-update: {:?}", err);
             }
         };
@@ -106,11 +130,7 @@ async fn main() -> Result<()> {
 
     // Run the command.
     match args.command {
-        Command::Launch(cmd) => cmd.run().await,
+        Command::Launch(cmd) => cmd.run(args.github_auth_token).await,
         Command::InstallSteamTool(cmd) => cmd.run().await,
-        Command::InternalLaunchUI => {
-            ui::launch_ui_main();
-            Ok(())
-        }
     }
 }

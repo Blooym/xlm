@@ -3,7 +3,6 @@ use anyhow::{Context, Result, anyhow, bail};
 use bytes::{Buf, Bytes};
 use clap::Parser;
 use flate2::bufread::GzDecoder;
-use log::{debug, error, info, warn};
 use reqwest::Url;
 use std::{
     env,
@@ -11,12 +10,13 @@ use std::{
     fmt::Display,
     fs::{self, File},
     io::{ErrorKind, Write},
-    path::PathBuf,
+    path::{Path, PathBuf},
     primitive,
     str::FromStr,
 };
 use tar::Archive;
 use tokio::process::Command;
+use tracing::{debug, error, info, warn};
 
 const XIVLAUNCHER_BIN_FILENAME: &str = "XIVLauncher.Core";
 const XIVLAUNCHER_VERSION_REMOTE_FILENAME: &str = "version";
@@ -107,7 +107,7 @@ pub struct LaunchCommand {
 }
 
 impl LaunchCommand {
-    pub async fn run(self) -> anyhow::Result<()> {
+    pub async fn run(self, gh_auth_token: Option<String>) -> anyhow::Result<()> {
         info!("Attempting launch with: {self:?}");
 
         // Query the GitHub API or Web Release URL for release information.
@@ -125,6 +125,7 @@ impl LaunchCommand {
                     &self.xlcore_repo_owner,
                     &self.xlcore_repo_name,
                     &self.xlcore_release_asset,
+                    gh_auth_token.as_deref(),
                 )
                 .await?
             }
@@ -240,7 +241,7 @@ impl LaunchCommand {
 async fn install_or_update_xlcore<F: Fn(&str)>(
     release: ReleaseAssetInfo,
     aria_source: AriaSource,
-    install_location: &PathBuf,
+    install_location: &Path,
     is_update: bool,
     progress_msg_cb: F,
 ) -> anyhow::Result<()> {
@@ -376,16 +377,23 @@ struct ReleaseAssetInfo {
 impl ReleaseAssetInfo {
     /// Obtain [`ReleaseAssetInfo`] from the GitHub API.
     pub async fn from_github(
-        repo_owner: &String,
-        repo_name: &String,
-        release_asset: &String,
+        repo_owner: &str,
+        repo_name: &str,
+        release_asset: &str,
+        gh_auth_token: Option<&str>,
     ) -> Result<Self> {
         let release = {
-            match octocrab::instance()
-                .repos(repo_owner, repo_name)
-                .releases()
-                .get_latest()
-                .await
+            match {
+                let mut builder = octocrab::OctocrabBuilder::new();
+                if let Some(auth_token) = gh_auth_token {
+                    builder = builder.personal_token(auth_token);
+                };
+                builder.build()?
+            }
+            .repos(repo_owner, repo_name)
+            .releases()
+            .get_latest()
+            .await
             {
                 Ok(release) => release,
                 Err(err) => {

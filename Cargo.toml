@@ -11,34 +11,35 @@ default = ["self_update"]
 self_update = ["dep:self_update"]
 
 [dependencies]
-bytes = "1.11.0"
-clap = { version = "4.5.54", features = ["derive", "string", "env"] }
+bytes = "1.11.1"
+clap = { version = "4.6.0", features = ["derive", "string", "env"] }
 dirs = "6.0.0"
-eframe = { default-features = false, version = "0.33.3", features = [
+eframe = { default-features = false, version = "0.34.1", features = [
     "default_fonts",
     "glow",
     "wayland",
     "x11",
 ] }
-flate2 = "1.1.8"
-octocrab = "0.49.5"
-reqwest = { version = "0.13.1", default-features = false, features = [
+flate2 = "1.1.9"
+octocrab = "0.49.7"
+reqwest = { version = "0.13.2", default-features = false, features = [
     "rustls",
     "http2",
     "charset",
     "system-proxy",
 ] }
-tar = "0.4.44"
-tokio = { version = "1.49.0", features = ["rt", "macros", "process"] }
-anyhow = "1.0.100"
-simplelog = "0.12.2"
-log = "0.4.29"
+tar = "0.4.45"
+tokio = { version = "1.51.1", features = ["rt", "macros", "process"] }
+anyhow = "1.0.102"
 self_update = { version = "0.42.0", optional = true, default-features = false, features = [
     "rustls",
     "archive-tar",
     "compression-flate2",
 ] }
-rustls = "0.23.36"
+rustls = "0.23.37"
+winit = { version = "0.30.13", features = ["x11", "wayland"] }
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 
 [profile.release]
 lto = true
