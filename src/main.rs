@@ -7,7 +7,7 @@ mod ui;
 use anyhow::Result;
 use clap::Parser;
 use commands::{install_steam_tool::InstallSteamToolCommand, launch::LaunchCommand};
-use std::{env::temp_dir, fs::File, io::BufWriter, str::FromStr, sync::Mutex};
+use std::{env::temp_dir, fs::File};
 use tracing::info;
 use tracing_subscriber::{EnvFilter, Layer, fmt, layer::SubscriberExt, util::SubscriberInitExt};
 

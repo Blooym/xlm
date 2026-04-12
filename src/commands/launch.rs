@@ -410,7 +410,7 @@ impl ReleaseAssetInfo {
         match release
             .assets
             .into_iter()
-            .find(|asset| &asset.name == release_asset)
+            .find(|asset| asset.name == release_asset)
         {
             Some(asset) => Ok(Self {
                 download_url: asset.browser_download_url,
