@@ -18,9 +18,9 @@
           packages = with pkgs; [
             rustc
             cargo
+            rust-analyzer
             rustfmt
             clippy
-            bashInteractive
           ];
 
           env = {
@@ -29,6 +29,7 @@
               pkgs.libxkbcommon
               pkgs.libGL
             ];
+            RUST_SRC_PATH = pkgs.rustPlatform.rustLibSrc;
           };
         };
       });
